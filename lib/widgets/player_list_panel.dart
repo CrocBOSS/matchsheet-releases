@@ -32,14 +32,36 @@ class PlayerListPanel extends StatelessWidget {
                 color: isSelected ? Colors.blue.shade100 : Colors.transparent,
                 child: ListTile(
                   dense: true,
-                  title: Text(
-                    player.position.isNotEmpty 
-                        ? '${player.number} - ${player.position}: ${player.name}'
-                        : '${player.number} - ${player.name}',
-                    style: TextStyle(
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      fontSize: 14,
-                    ),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '#${player.number}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        player.position.isNotEmpty ? player.position : '-',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        player.name,
+                        style: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 14,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
                   ),
                   onTap: () => onPlayerSelected(player),
                   selected: isSelected,

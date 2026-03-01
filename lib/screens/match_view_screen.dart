@@ -112,7 +112,17 @@ class _MatchViewScreenState extends State<MatchViewScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('${player.number} - ${player.name}', style: const TextStyle(fontSize: 14)),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('#${player.number}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(player.position.isNotEmpty ? player.position : '-', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              const SizedBox(height: 4),
+              Text(player.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -249,7 +259,16 @@ class _MatchViewScreenState extends State<MatchViewScreen> {
                                   ),
                                 ),
                                 Text(
-                                  player.position.isNotEmpty ? '${player.position}: ${player.name}' : player.name,
+                                  player.position.isNotEmpty ? player.position : '-',
+                                  style: TextStyle(
+                                    fontSize: playerNameFontSize * 0.8,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  player.name,
                                   style: TextStyle(
                                     fontSize: playerNameFontSize,
                                     color: Colors.blue,

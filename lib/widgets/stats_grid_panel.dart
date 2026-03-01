@@ -43,9 +43,24 @@ class StatsGridPanel extends StatelessWidget {
       padding: EdgeInsets.all(screenWidth > 600 ? 16 : 8),
       child: Column(
         children: [
-          Text(
-            '${selectedPlayer!.number} - ${selectedPlayer!.name}',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '#${selectedPlayer!.number}',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                selectedPlayer!.position.isNotEmpty ? selectedPlayer!.position : '-',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                selectedPlayer!.name,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           GridView.count(

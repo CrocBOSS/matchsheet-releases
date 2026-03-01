@@ -1766,7 +1766,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 Text(
-                                  player.position.isNotEmpty ? '${player.position}: ${player.name}' : player.name,
+                                  player.position.isNotEmpty ? player.position : '-',
+                                  style: TextStyle(
+                                    fontSize: playerNameFontSize * 0.8,
+                                    color: Colors.grey[600],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  player.name,
                                   style: TextStyle(fontSize: playerNameFontSize),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
