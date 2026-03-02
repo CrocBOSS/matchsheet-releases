@@ -955,6 +955,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
       await file.writeAsString(content);
       
       // Share the file
+      // ignore: deprecated_member_use
       await Share.shareXFiles(
         [XFile(file.path)],
         subject: 'Match Sheet Export',
@@ -1081,7 +1082,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
     return PopScope(
       canPop: false,
-      onPopInvoked: (didPop) async {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (hasUnsavedChanges) {
           bool? shouldPop = await showDialog<bool>(

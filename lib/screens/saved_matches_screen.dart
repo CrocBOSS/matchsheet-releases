@@ -273,6 +273,7 @@ class _SavedMatchesScreenState extends State<SavedMatchesScreen> with WidgetsBin
       await file.writeAsString(content);
 
       // Share the file
+      // ignore: deprecated_member_use
       await Share.shareXFiles(
         [XFile(file.path)],
         subject: 'Match Sheet Export',
