@@ -468,34 +468,10 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
   Player _getUpdatedPlayer(Player player, String statName, int increment) {
     if (currentHalf == 1) {
-      // First half - use hardcoded fields
-      switch (statName) {
-        case 'completedPasses':
-          return player.copyWith(completedPasses: player.completedPasses + increment);
-        case 'interceptions':
-          return player.copyWith(interceptions: player.interceptions + increment);
-        case 'turnovers':
-          return player.copyWith(turnovers: player.turnovers + increment);
-        case 'tackles':
-          return player.copyWith(tackles: player.tackles + increment);
-        case 'fouls':
-          return player.copyWith(fouls: player.fouls + increment);
-        case 'shotsOnTarget':
-          return player.copyWith(shotsOnTarget: player.shotsOnTarget + increment);
-        case 'assists':
-          return player.copyWith(assists: player.assists + increment);
-        case 'goals':
-          return player.copyWith(goals: player.goals + increment);
-        case 'goalkeeperSaves':
-          return player.copyWith(goalkeeperSaves: player.goalkeeperSaves + increment);
-        case 'yellowCards':
-          return player.copyWith(yellowCards: player.yellowCards + increment);
-        default:
-          // Handle custom stats for first half
-          final updatedCustomStats = Map<String, int>.from(player.customStats);
-          updatedCustomStats[statName] = (updatedCustomStats[statName] ?? 0) + increment;
-          return player.copyWith(customStats: updatedCustomStats);
-      }
+      // First half - use customStats map
+      final updatedCustomStats = Map<String, int>.from(player.customStats);
+      updatedCustomStats[statName] = (updatedCustomStats[statName] ?? 0) + increment;
+      return player.copyWith(customStats: updatedCustomStats);
     } else {
       // Second half - use secondHalfStats map
       final updatedSecondHalf = Map<String, int>.from(player.secondHalfStats);
@@ -506,32 +482,8 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
   int _getStatValue(Player player, String statKey) {
     if (currentHalf == 1) {
-      // First half stats
-      switch (statKey) {
-        case 'completedPasses':
-          return player.completedPasses;
-        case 'interceptions':
-          return player.interceptions;
-        case 'turnovers':
-          return player.turnovers;
-        case 'tackles':
-          return player.tackles;
-        case 'fouls':
-          return player.fouls;
-        case 'shotsOnTarget':
-          return player.shotsOnTarget;
-        case 'assists':
-          return player.assists;
-        case 'goals':
-          return player.goals;
-        case 'goalkeeperSaves':
-          return player.goalkeeperSaves;
-        case 'yellowCards':
-          return player.yellowCards;
-        default:
-          // Check custom stats for first half
-          return player.customStats[statKey] ?? 0;
-      }
+      // First half stats - all from customStats
+      return player.customStats[statKey] ?? 0;
     } else {
       // Second half stats - all from secondHalfStats map
       return player.secondHalfStats[statKey] ?? 0;
