@@ -7,17 +7,17 @@ import '../models/match_entry.dart';
 import '../models/stat_type.dart';
 import '../services/storage_service.dart';
 import '../utils/dialog_helpers.dart';
-import 'settings_screen.dart';
+import 'basketball_settings_screen.dart';
 import 'saved_matches_screen.dart';
 
-class SoccerScreen extends StatefulWidget {
-  const SoccerScreen({Key? key}) : super(key: key);
+class BasketballScreen extends StatefulWidget {
+  const BasketballScreen({Key? key}) : super(key: key);
 
   @override
-  State<SoccerScreen> createState() => _SoccerScreenState();
+  State<BasketballScreen> createState() => _BasketballScreenState();
 }
 
-class _SoccerScreenState extends State<SoccerScreen> {
+class _BasketballScreenState extends State<BasketballScreen> {
   List<Player> players = [];
   List<StatType> statTypes = [];
   List<StatType> positions = [];
@@ -33,8 +33,8 @@ class _SoccerScreenState extends State<SoccerScreen> {
     super.initState();
     _horizontalScrollController = ScrollController();
     // Initialize with defaults immediately so UI renders
-    statTypes = StorageService.getDefaultStatTypes();
-    positions = StorageService.getDefaultPositions();
+    statTypes = StorageService.getDefaultBasketballStatTypes();
+    positions = StorageService.getDefaultBasketballPositions();
     _loadData();
   }
 
@@ -46,15 +46,12 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
   Future<void> _loadData() async {
     final playersData = await StorageService.loadPlayers();
-    final loadedStatTypes = await StorageService.loadStatTypes();
-    final loadedPositions = await StorageService.loadPositions();
     
     setState(() {
       players = List<Player>.from(playersData['players'] as List);
       nextPlayerId = playersData['nextId'] as int;
-      // If no stat types loaded, use defaults (already initialized above)
-      statTypes = loadedStatTypes.isEmpty ? statTypes : loadedStatTypes;
-      positions = loadedPositions.isEmpty ? positions : loadedPositions;
+      // Always use basketball defaults for stat types and positions
+      // Don't load generic ones from storage
       hasUnsavedChanges = false;
     });
     
@@ -279,11 +276,32 @@ class _SoccerScreenState extends State<SoccerScreen> {
     );
   }
 
+  /// Maps a "Made" stat to its corresponding "Attempts" stat
+  String? _getAttemptStatKey(String madeStatKey) {
+    switch (madeStatKey) {
+      case 'twoPointMade':
+        return 'twoPointAttempts';
+      case 'threePointMade':
+        return 'threePointAttempts';
+      case 'freeThrowMade':
+        return 'freeThrowAttempts';
+      default:
+        return null;
+    }
+  }
+
   void _incrementStat(Player player, String statName) {
     setState(() {
       final index = players.indexWhere((p) => p.id == player.id);
       if (index >= 0) {
-        final updatedPlayer = _getUpdatedPlayer(player, statName, 1);
+        var updatedPlayer = _getUpdatedPlayer(player, statName, 1);
+        
+        // If this is a "Made" stat, also increment the corresponding "Attempts" stat
+        final attemptStatKey = _getAttemptStatKey(statName);
+        if (attemptStatKey != null) {
+          updatedPlayer = _getUpdatedPlayer(updatedPlayer, attemptStatKey, 1);
+        }
+        
         players[index] = updatedPlayer;
       }
       hasUnsavedChanges = true;
@@ -295,7 +313,14 @@ class _SoccerScreenState extends State<SoccerScreen> {
     setState(() {
       final index = players.indexWhere((p) => p.id == player.id);
       if (index >= 0) {
-        final updatedPlayer = _getUpdatedPlayer(player, statName, -1);
+        var updatedPlayer = _getUpdatedPlayer(player, statName, -1);
+        
+        // If this is a "Made" stat, also decrement the corresponding "Attempts" stat
+        final attemptStatKey = _getAttemptStatKey(statName);
+        if (attemptStatKey != null) {
+          updatedPlayer = _getUpdatedPlayer(updatedPlayer, attemptStatKey, -1);
+        }
+        
         players[index] = updatedPlayer;
       }
       hasUnsavedChanges = true;
@@ -466,34 +491,10 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
   Player _getUpdatedPlayer(Player player, String statName, int increment) {
     if (currentHalf == 1) {
-      // First half - use hardcoded fields
-      switch (statName) {
-        case 'completedPasses':
-          return player.copyWith(completedPasses: player.completedPasses + increment);
-        case 'interceptions':
-          return player.copyWith(interceptions: player.interceptions + increment);
-        case 'turnovers':
-          return player.copyWith(turnovers: player.turnovers + increment);
-        case 'tackles':
-          return player.copyWith(tackles: player.tackles + increment);
-        case 'fouls':
-          return player.copyWith(fouls: player.fouls + increment);
-        case 'shotsOnTarget':
-          return player.copyWith(shotsOnTarget: player.shotsOnTarget + increment);
-        case 'assists':
-          return player.copyWith(assists: player.assists + increment);
-        case 'goals':
-          return player.copyWith(goals: player.goals + increment);
-        case 'goalkeeperSaves':
-          return player.copyWith(goalkeeperSaves: player.goalkeeperSaves + increment);
-        case 'yellowCards':
-          return player.copyWith(yellowCards: player.yellowCards + increment);
-        default:
-          // Handle custom stats for first half
-          final updatedCustomStats = Map<String, int>.from(player.customStats);
-          updatedCustomStats[statName] = (updatedCustomStats[statName] ?? 0) + increment;
-          return player.copyWith(customStats: updatedCustomStats);
-      }
+      // First half - use customStats map for basketball
+      final updatedCustomStats = Map<String, int>.from(player.customStats);
+      updatedCustomStats[statName] = (updatedCustomStats[statName] ?? 0) + increment;
+      return player.copyWith(customStats: updatedCustomStats);
     } else {
       // Second half - use secondHalfStats map
       final updatedSecondHalf = Map<String, int>.from(player.secondHalfStats);
@@ -504,32 +505,8 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
   int _getStatValue(Player player, String statKey) {
     if (currentHalf == 1) {
-      // First half stats
-      switch (statKey) {
-        case 'completedPasses':
-          return player.completedPasses;
-        case 'interceptions':
-          return player.interceptions;
-        case 'turnovers':
-          return player.turnovers;
-        case 'tackles':
-          return player.tackles;
-        case 'fouls':
-          return player.fouls;
-        case 'shotsOnTarget':
-          return player.shotsOnTarget;
-        case 'assists':
-          return player.assists;
-        case 'goals':
-          return player.goals;
-        case 'goalkeeperSaves':
-          return player.goalkeeperSaves;
-        case 'yellowCards':
-          return player.yellowCards;
-        default:
-          // Check custom stats for first half
-          return player.customStats[statKey] ?? 0;
-      }
+      // First half stats - all from customStats
+      return player.customStats[statKey] ?? 0;
     } else {
       // Second half stats - all from secondHalfStats map
       return player.secondHalfStats[statKey] ?? 0;
@@ -540,7 +517,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SettingsScreen(
+        builder: (context) => BasketballSettingsScreen(
           statTypes: statTypes,
           positions: positions,
           players: players,
@@ -583,7 +560,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
     setState(() {
       players = [];
       nextPlayerId = 1;
-      statTypes = StorageService.getDefaultStatTypes();
+      statTypes = StorageService.getDefaultBasketballStatTypes();
       currentHalf = 1;
       currentSessionName = StorageService.UNSAVED_MATCH_NAME;
       teamName = 'Team A'; // Reset team name
@@ -1126,7 +1103,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
                 children: [
                   Flexible(
                     child: Text(
-                      'Soccer Statistics Tracker',
+                      'Basketball Statistics Tracker',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: isLandscape ? 12 : 16,
@@ -1195,7 +1172,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
                 ],
               )
             : Tooltip(
-                message: 'Soccer Statistics Tracker',
+                message: 'Basketball Statistics Tracker',
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white),
@@ -1418,7 +1395,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 stops: const [0.0, 0.67, 1.0],
-                colors: [Colors.blue[900]!, Colors.white, Colors.white],
+                colors: [Colors.orange[900]!, Colors.white, Colors.white],
               ),
               boxShadow: [
                 BoxShadow(

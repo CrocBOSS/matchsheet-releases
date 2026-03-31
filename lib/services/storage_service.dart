@@ -41,6 +41,35 @@ class StorageService {
     ];
   }
 
+  /// Default stat types for Basketball
+  static List<StatType> getDefaultBasketballStatTypes() {
+    return [
+      StatType(key: 'twoPointAttempts', label: '2PT Attempts'),
+      StatType(key: 'twoPointMade', label: '2PT Made'),
+      StatType(key: 'threePointAttempts', label: '3PT Attempts'),
+      StatType(key: 'threePointMade', label: '3PT Made'),
+      StatType(key: 'freeThrowAttempts', label: 'FT Attempts'),
+      StatType(key: 'freeThrowMade', label: 'FT Made'),
+      StatType(key: 'rebounds', label: 'Rebounds'),
+      StatType(key: 'turnovers', label: 'Turnovers'),
+      StatType(key: 'assists', label: 'Assists'),
+      StatType(key: 'steals', label: 'Steals'),
+      StatType(key: 'blocks', label: 'Blocks'),
+      StatType(key: 'fouls', label: 'Fouls'),
+    ];
+  }
+
+  /// Default positions for Basketball players
+  static List<StatType> getDefaultBasketballPositions() {
+    return [
+      StatType(key: 'Point Guard', label: 'PG'),
+      StatType(key: 'Shooting Guard', label: 'SG'),
+      StatType(key: 'Small Forward', label: 'SF'),
+      StatType(key: 'Power Forward', label: 'PF'),
+      StatType(key: 'Center', label: 'C'),
+    ];
+  }
+
   /// Parse session data into players, statTypes, and nextId
   static (List<Player>, List<StatType>, int) parseSessionData(Map<String, dynamic> sessionData) {
     // Convert players from JSON

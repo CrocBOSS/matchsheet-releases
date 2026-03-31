@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'soccer_screen.dart';
+import 'basketball_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -60,7 +61,7 @@ class HomeScreen extends StatelessWidget {
         "title": "Basketball",
         "icon": Icons.sports_basketball,
         "color": Colors.orange,
-        "enabled": false,
+        "enabled": true,
       },
       {
         "title": "American Football",
@@ -146,6 +147,13 @@ class HomeScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const SoccerScreen(),
+                          ),
+                        );
+                      } else if (sport["title"] == "Basketball") {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BasketballScreen(),
                           ),
                         );
                       } else {
