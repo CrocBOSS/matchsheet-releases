@@ -545,7 +545,7 @@ class StorageService {
   }
 
   /// Save current game session with a name
-  static Future<void> saveGameSession(String sessionName, List<Player> players, List<StatType> statTypes, int nextId, {String teamName = 'Team A'}) async {
+  static Future<void> saveGameSession(String sessionName, List<Player> players, List<StatType> statTypes, int nextId, {String teamName = 'Team A', String sport = 'soccer'}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       
@@ -554,6 +554,7 @@ class StorageService {
         'name': sessionName,
         'timestamp': DateTime.now().toIso8601String(),
         'teamName': teamName,
+        'sport': sport,
         'players': players.map((p) => p.toJson()).toList(),
         'statTypes': statTypes.map((s) => {'key': s.key, 'label': s.label}).toList(),
         'nextId': nextId,
@@ -563,8 +564,8 @@ class StorageService {
       final savedGamesJson = prefs.getString('saved_games') ?? '[]';
       final List<dynamic> savedGames = jsonDecode(savedGamesJson);
       
-      // Check if a session with this name already exists
-      final existingIndex = savedGames.indexWhere((s) => s['name'] == sessionName);
+      // Check if a session with this name already exists (and same sport)
+      final existingIndex = savedGames.indexWhere((s) => s['name'] == sessionName && (s['sport'] ?? 'soccer') == sport);
       
       if (existingIndex >= 0) {
         // Update existing session
@@ -581,13 +582,22 @@ class StorageService {
     }
   }
 
-  /// Load all saved game sessions
-  static Future<List<Map<String, dynamic>>> loadSavedSessions() async {
+  /// Load all saved game sessions filtered by sport
+  static Future<List<Map<String, dynamic>>> loadSavedSessions({String? sport}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedGamesJson = prefs.getString('saved_games') ?? '[]';
       final List<dynamic> savedGames = jsonDecode(savedGamesJson);
-      return savedGames.cast<Map<String, dynamic>>();
+      
+      if (sport == null) {
+        return savedGames.cast<Map<String, dynamic>>();
+      }
+      
+      // Filter by sport
+      return savedGames
+          .cast<Map<String, dynamic>>()
+          .where((game) => (game['sport'] ?? 'soccer') == sport)
+          .toList();
     } catch (e) {
       return [];
     }

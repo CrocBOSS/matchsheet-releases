@@ -10,10 +10,12 @@ import 'match_view_screen.dart';
 
 class SavedMatchesScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onLoadMatch;
+  final String sport;
 
   const SavedMatchesScreen({
     Key? key,
     required this.onLoadMatch,
+    required this.sport,
   }) : super(key: key);
 
   @override
@@ -49,7 +51,7 @@ class _SavedMatchesScreenState extends State<SavedMatchesScreen> with WidgetsBin
   }
 
   void _loadMatches() {
-    _savedMatches = StorageService.loadSavedSessions();
+    _savedMatches = StorageService.loadSavedSessions(sport: widget.sport);
   }
 
   void _deleteMatch(int index) {

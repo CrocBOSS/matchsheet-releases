@@ -108,6 +108,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
         statTypes,
         1,
         teamName: 'Team A',
+        sport: 'basketball',
       );
       
       setState(() {
@@ -157,6 +158,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
         statTypes,
         nextPlayerId,
         teamName: teamName,
+        sport: 'basketball',
       );
       if (mounted) {
         setState(() {
@@ -661,6 +663,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
                             statTypes,
                             nextPlayerId,
                             teamName: teamName,
+                            sport: 'basketball',
                           );
                         }
                         
@@ -721,6 +724,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => SavedMatchesScreen(
+          sport: 'basketball',
           onLoadMatch: (sessionData) {
             _loadGameSession(sessionData);
           },
