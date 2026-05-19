@@ -3,21 +3,21 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
-import '../models/match_entry.dart';
-import '../models/stat_type.dart';
-import '../services/storage_service.dart';
-import '../utils/dialog_helpers.dart';
-import 'basketball_settings_screen.dart';
-import 'saved_matches_screen.dart';
+import '../../models/match_entry.dart';
+import '../../models/stat_type.dart';
+import '../../services/storage_service.dart';
+import '../../utils/dialog_helpers.dart';
+import 'settings_screen.dart';
+import '../shared/saved_matches_screen.dart';
 
-class BasketballScreen extends StatefulWidget {
-  const BasketballScreen({Key? key}) : super(key: key);
+class SoccerScreen extends StatefulWidget {
+  const SoccerScreen({Key? key}) : super(key: key);
 
   @override
-  State<BasketballScreen> createState() => _BasketballScreenState();
+  State<SoccerScreen> createState() => _SoccerScreenState();
 }
 
-class _BasketballScreenState extends State<BasketballScreen> {
+class _SoccerScreenState extends State<SoccerScreen> {
   List<Player> players = [];
   List<StatType> statTypes = [];
   List<StatType> positions = [];
@@ -33,8 +33,8 @@ class _BasketballScreenState extends State<BasketballScreen> {
     super.initState();
     _horizontalScrollController = ScrollController();
     // Initialize with defaults immediately so UI renders
-    statTypes = StorageService.getDefaultBasketballStatTypes();
-    positions = StorageService.getDefaultBasketballPositions();
+    statTypes = StorageService.getDefaultStatTypes();
+    positions = StorageService.getDefaultPositions();
     _loadData();
   }
 
@@ -46,12 +46,15 @@ class _BasketballScreenState extends State<BasketballScreen> {
 
   Future<void> _loadData() async {
     final playersData = await StorageService.loadPlayers();
+    final loadedStatTypes = await StorageService.loadStatTypes();
+    final loadedPositions = await StorageService.loadPositions();
     
     setState(() {
       players = List<Player>.from(playersData['players'] as List);
       nextPlayerId = playersData['nextId'] as int;
-      // Always use basketball defaults for stat types and positions
-      // Don't load generic ones from storage
+      // If no stat types loaded, use defaults (already initialized above)
+      statTypes = loadedStatTypes.isEmpty ? statTypes : loadedStatTypes;
+      positions = loadedPositions.isEmpty ? positions : loadedPositions;
       hasUnsavedChanges = false;
     });
     
@@ -108,7 +111,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
         statTypes,
         1,
         teamName: 'Team A',
-        sport: 'basketball',
+        sport: 'soccer',
       );
       
       setState(() {
@@ -158,7 +161,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
         statTypes,
         nextPlayerId,
         teamName: teamName,
-        sport: 'basketball',
+        sport: 'soccer',
       );
       if (mounted) {
         setState(() {
@@ -278,32 +281,11 @@ class _BasketballScreenState extends State<BasketballScreen> {
     );
   }
 
-  /// Maps a "Made" stat to its corresponding "Attempts" stat
-  String? _getAttemptStatKey(String madeStatKey) {
-    switch (madeStatKey) {
-      case 'twoPointMade':
-        return 'twoPointAttempts';
-      case 'threePointMade':
-        return 'threePointAttempts';
-      case 'freeThrowMade':
-        return 'freeThrowAttempts';
-      default:
-        return null;
-    }
-  }
-
   void _incrementStat(Player player, String statName) {
     setState(() {
       final index = players.indexWhere((p) => p.id == player.id);
       if (index >= 0) {
-        var updatedPlayer = _getUpdatedPlayer(player, statName, 1);
-        
-        // If this is a "Made" stat, also increment the corresponding "Attempts" stat
-        final attemptStatKey = _getAttemptStatKey(statName);
-        if (attemptStatKey != null) {
-          updatedPlayer = _getUpdatedPlayer(updatedPlayer, attemptStatKey, 1);
-        }
-        
+        final updatedPlayer = _getUpdatedPlayer(player, statName, 1);
         players[index] = updatedPlayer;
       }
       hasUnsavedChanges = true;
@@ -315,14 +297,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
     setState(() {
       final index = players.indexWhere((p) => p.id == player.id);
       if (index >= 0) {
-        var updatedPlayer = _getUpdatedPlayer(player, statName, -1);
-        
-        // If this is a "Made" stat, also decrement the corresponding "Attempts" stat
-        final attemptStatKey = _getAttemptStatKey(statName);
-        if (attemptStatKey != null) {
-          updatedPlayer = _getUpdatedPlayer(updatedPlayer, attemptStatKey, -1);
-        }
-        
+        final updatedPlayer = _getUpdatedPlayer(player, statName, -1);
         players[index] = updatedPlayer;
       }
       hasUnsavedChanges = true;
@@ -493,7 +468,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
 
   Player _getUpdatedPlayer(Player player, String statName, int increment) {
     if (currentHalf == 1) {
-      // First half - use customStats map for basketball
+      // First half - use customStats map
       final updatedCustomStats = Map<String, int>.from(player.customStats);
       updatedCustomStats[statName] = (updatedCustomStats[statName] ?? 0) + increment;
       return player.copyWith(customStats: updatedCustomStats);
@@ -519,7 +494,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BasketballSettingsScreen(
+        builder: (context) => SettingsScreen(
           statTypes: statTypes,
           positions: positions,
           players: players,
@@ -562,7 +537,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
     setState(() {
       players = [];
       nextPlayerId = 1;
-      statTypes = StorageService.getDefaultBasketballStatTypes();
+      statTypes = StorageService.getDefaultStatTypes();
       currentHalf = 1;
       currentSessionName = StorageService.UNSAVED_MATCH_NAME;
       teamName = 'Team A'; // Reset team name
@@ -663,7 +638,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
                             statTypes,
                             nextPlayerId,
                             teamName: teamName,
-                            sport: 'basketball',
+                            sport: 'soccer',
                           );
                         }
                         
@@ -724,7 +699,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => SavedMatchesScreen(
-          sport: 'basketball',
+          sport: 'soccer',
           onLoadMatch: (sessionData) {
             _loadGameSession(sessionData);
           },
@@ -1107,7 +1082,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
                 children: [
                   Flexible(
                     child: Text(
-                      'Basketball Statistics Tracker',
+                      'Soccer Statistics Tracker',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: isLandscape ? 12 : 16,
@@ -1176,7 +1151,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
                 ],
               )
             : Tooltip(
-                message: 'Basketball Statistics Tracker',
+                message: 'Soccer Statistics Tracker',
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white),
@@ -1399,7 +1374,7 @@ class _BasketballScreenState extends State<BasketballScreen> {
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
                 stops: const [0.0, 0.67, 1.0],
-                colors: [Colors.orange[900]!, Colors.white, Colors.white],
+                colors: [Colors.blue[900]!, Colors.white, Colors.white],
               ),
               boxShadow: [
                 BoxShadow(

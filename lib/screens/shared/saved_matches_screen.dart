@@ -3,8 +3,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 
-import '../services/storage_service.dart';
-import 'match_view_screen.dart';
+import '../../services/storage_service.dart';
+import 'match_sheet_screen.dart';
 
 
 
@@ -248,7 +248,7 @@ class _SavedMatchesScreenState extends State<SavedMatchesScreen> with WidgetsBin
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MatchViewScreen(
+        builder: (context) => MatchSheetScreen(
           players: playersData,
           statTypes: statTypesData,
           teamName: teamName,

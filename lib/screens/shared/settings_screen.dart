@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import '../models/stat_type.dart';
-import '../models/match_entry.dart';
-import '../services/storage_service.dart';
+import '../../models/stat_type.dart';
+import '../../models/match_entry.dart';
+import '../../services/storage_service.dart';
 
-class BasketballSettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatefulWidget {
   final List<StatType> statTypes;
   final List<StatType> positions;
   final List<Player> players;
   final Function(List<StatType>) onStatTypesSaved;
   final Function(List<StatType>) onPositionsSaved;
 
-  const BasketballSettingsScreen({
+  const SettingsScreen({
     Key? key,
     required this.statTypes,
     required this.positions,
@@ -20,10 +20,10 @@ class BasketballSettingsScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<BasketballSettingsScreen> createState() => _BasketballSettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> with TickerProviderStateMixin {
+class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
   late List<StatType> statTypes;
   late List<StatType> positions;
   late TabController _tabController;
@@ -46,9 +46,8 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
   }
 
   bool _isStatTypeUsed(String statKey) {
-    // Check if any player has a non-zero value for this stat
+    // Generic engine - check only custom stats (no hardcoded sport-specific logic)
     for (final player in widget.players) {
-      // Check custom stats for basketball
       if ((player.customStats[statKey] ?? 0) != 0) return true;
       if ((player.secondHalfStats[statKey] ?? 0) != 0) return true;
     }
@@ -232,7 +231,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
       builder: (context) {
         return AlertDialog(
           title: const Text('Reset to Defaults'),
-          content: const Text('This will restore the default basketball stat types.'),
+          content: const Text('This will restore the default stat types.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -241,7 +240,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
             TextButton(
               onPressed: () {
                 setState(() {
-                  statTypes = StorageService.getDefaultBasketballStatTypes();
+                  statTypes = StorageService.getDefaultStatTypes();
                 });
                 Navigator.pop(context);
               },
@@ -269,7 +268,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
                 TextField(
                   controller: keyController,
                   decoration: const InputDecoration(
-                    labelText: 'Key (e.g., PG)',
+                    labelText: 'Key (e.g., GK)',
                     border: OutlineInputBorder(),
                     hintText: 'Internal identifier, no spaces',
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -279,7 +278,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
                 TextField(
                   controller: labelController,
                   decoration: const InputDecoration(
-                    labelText: 'Display Label (e.g., Point Guard)',
+                    labelText: 'Display Label (e.g., Goalkeeper)',
                     border: OutlineInputBorder(),
                     hintText: 'What users see in the UI',
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -425,7 +424,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
       builder: (context) {
         return AlertDialog(
           title: const Text('Reset to Defaults'),
-          content: const Text('This will restore the default basketball positions.'),
+          content: const Text('This will restore the default positions.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -434,7 +433,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
             TextButton(
               onPressed: () {
                 setState(() {
-                  positions = StorageService.getDefaultBasketballPositions();
+                  positions = StorageService.getDefaultPositions();
                 });
                 Navigator.pop(context);
               },
@@ -461,7 +460,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: appBarHeight,
-        title: const Text('Basketball Settings'),
+        title: const Text('Settings'),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -495,7 +494,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Basketball Stat Types',
+                  'Manage Stat Types',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -552,7 +551,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Basketball Positions',
+                  'Manage Positions',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -603,7 +602,7 @@ class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> wit
           icon: const Icon(Icons.add),
           label: Text(_tabController.index == 0 ? 'Add Stat Type' : 'Add Position'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
+            backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
           ),
         ),

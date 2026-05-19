@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/match_entry.dart';
-import '../models/stat_type.dart';
+import '../../models/match_entry.dart';
+import '../../models/stat_type.dart';
 
-class MatchViewScreen extends StatefulWidget {
+class MatchSheetScreen extends StatefulWidget {
   final List<Player> players;
   final List<StatType> statTypes;
   final String teamName;
 
-  const MatchViewScreen({
+  const MatchSheetScreen({
     Key? key,
     required this.players,
     required this.statTypes,
@@ -15,10 +15,10 @@ class MatchViewScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<MatchViewScreen> createState() => _MatchViewScreenState();
+  State<MatchSheetScreen> createState() => _MatchSheetScreenState();
 }
 
-class _MatchViewScreenState extends State<MatchViewScreen> {
+class _MatchSheetScreenState extends State<MatchSheetScreen> {
   late ScrollController _horizontalScrollController;
 
   @override

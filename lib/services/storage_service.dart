@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/match_entry.dart';
 import '../models/stat_type.dart';
+import '../models/training_entry.dart';
 
 class StorageService {
   static const String _playersKey = 'players_data';
@@ -688,6 +689,361 @@ class StorageService {
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Save training entries separately from match data
+  static Future<void> saveTrainingEntries(
+    List<TrainingEntry> entries,
+    int nextId,
+    String trainingType,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'training_entries_$trainingType';
+      final nextIdKey = 'training_next_id_$trainingType';
+
+      // Convert entries to JSON
+      final entriesJson = entries.map((e) => e.toJson()).toList();
+
+      // Save entries list
+      await prefs.setString(key, jsonEncode(entriesJson));
+
+      // Save next ID
+      await prefs.setInt(nextIdKey, nextId);
+    } catch (e) {
+      // Error saving training entries silently
+    }
+  }
+
+  /// Load training entries from persistent storage
+  static Future<Map<String, dynamic>> loadTrainingEntries(String trainingType) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'training_entries_$trainingType';
+      final nextIdKey = 'training_next_id_$trainingType';
+
+      final entriesJsonString = prefs.getString(key);
+      final nextId = prefs.getInt(nextIdKey) ?? 1;
+
+      if (entriesJsonString == null || entriesJsonString.isEmpty) {
+        return {'entries': [], 'nextId': 1};
+      }
+
+      // Decode JSON
+      final List<dynamic> entriesJson = jsonDecode(entriesJsonString);
+
+      // Convert to TrainingEntry objects
+      final entries = entriesJson
+          .map((json) => TrainingEntry.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      return {'entries': entries, 'nextId': nextId};
+    } catch (e) {
+      return {'entries': [], 'nextId': 1};
+    }
+  }
+
+  /// Clear training data for a specific training type
+  static Future<void> clearTrainingData(String trainingType) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'training_entries_$trainingType';
+      final nextIdKey = 'training_next_id_$trainingType';
+      await prefs.remove(key);
+      await prefs.remove(nextIdKey);
+    } catch (e) {
+      // Error clearing training data silently
+    }
+  }
+
+  /// Default strength exercises
+  static List<Map<String, dynamic>> getDefaultStrengthExercises() {
+    return [
+      {
+        'key': 'calfRises',
+        'label': 'Calf Rises',
+        'targetReps': 120,
+        'targetSets': 1,
+        'isPerLeg': true,
+        'unit': 'reps',
+      },
+      {
+        'key': 'pickUps',
+        'label': 'Pick Ups',
+        'targetReps': 150,
+        'targetSets': 1,
+        'isPerLeg': false,
+        'unit': 'reps',
+      },
+      {
+        'key': 'crabWalk',
+        'label': 'Crab Walk',
+        'targetReps': 100,
+        'targetSets': 2,
+        'isPerLeg': false,
+        'unit': 'meters',
+      },
+      {
+        'key': 'sitUps',
+        'label': 'Sit Ups',
+        'targetReps': 25,
+        'targetSets': 5,
+        'isPerLeg': false,
+        'unit': 'reps',
+      },
+      {
+        'key': 'pushUps',
+        'label': 'Push Ups',
+        'targetReps': 25,
+        'targetSets': 5,
+        'isPerLeg': false,
+        'unit': 'reps',
+      },
+      {
+        'key': 'barrierJumps',
+        'label': 'Barrier Jumps',
+        'targetReps': 10,
+        'targetSets': 5,
+        'isPerLeg': false,
+        'unit': 'reps',
+      },
+    ];
+  }
+
+  /// Save strength exercises to persistent storage
+  static Future<void> saveStrengthExercises(List<Map<String, dynamic>> exercises) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final exercisesJson = exercises;
+      await prefs.setString('strength_exercises', jsonEncode(exercisesJson));
+    } catch (e) {
+      // Error saving exercises silently
+    }
+  }
+
+  /// Load strength exercises or return defaults
+  static Future<List<Map<String, dynamic>>> loadStrengthExercises() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final exercisesString = prefs.getString('strength_exercises');
+
+      if (exercisesString == null || exercisesString.isEmpty) {
+        return getDefaultStrengthExercises();
+      }
+
+      final List<dynamic> exercisesJson = jsonDecode(exercisesString);
+      return exercisesJson.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return getDefaultStrengthExercises();
+    }
+  }
+
+  /// Save strength training session with name and timestamp
+  static Future<void> saveStrengthTrainingSession(
+    String sessionName,
+    List<TrainingEntry> entries,
+    int nextId, {
+    String playerId = '',
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Create session data
+      final sessionData = {
+        'name': sessionName,
+        'timestamp': DateTime.now().toIso8601String(),
+        'sport': 'strength_condition',
+        'entries': entries.map((e) => e.toJson()).toList(),
+        'nextId': nextId,
+        'playerId': playerId,
+      };
+
+      // Get existing saved sessions list
+      final savedSessionsJson = prefs.getString('saved_training_sessions') ?? '[]';
+      final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
+
+      // Add new session (allow duplicate names with different timestamps)
+      savedSessions.add(sessionData);
+
+      // Save back
+      await prefs.setString('saved_training_sessions', jsonEncode(savedSessions));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Load saved strength training sessions, optionally filtered by playerId
+  static Future<List<Map<String, dynamic>>> loadSavedStrengthTrainingSessions({String? playerId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSessionsJson = prefs.getString('saved_training_sessions') ?? '[]';
+      final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
+
+      List<Map<String, dynamic>> sessions = savedSessions.cast<Map<String, dynamic>>();
+      
+      // Filter by playerId if provided
+      if (playerId != null) {
+        sessions = sessions.where((session) {
+          final sessionPlayerId = session['playerId'] as String? ?? '';
+          return sessionPlayerId == playerId;
+        }).toList();
+      }
+      
+      return sessions;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Delete a saved strength training session by index
+  static Future<void> deleteStrengthTrainingSession(int index, {String? playerId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSessionsJson = prefs.getString('saved_training_sessions') ?? '[]';
+      final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
+
+      if (playerId != null) {
+        // Find and delete the index-th session belonging to this player
+        int playerSessionCount = 0;
+        for (int i = 0; i < savedSessions.length; i++) {
+          final session = savedSessions[i] as Map<String, dynamic>;
+          final sessionPlayerId = session['playerId'] as String? ?? '';
+          if (sessionPlayerId == playerId) {
+            if (playerSessionCount == index) {
+              savedSessions.removeAt(i);
+              break;
+            }
+            playerSessionCount++;
+          }
+        }
+      } else if (index >= 0 && index < savedSessions.length) {
+        // Delete by global index (legacy behavior)
+        savedSessions.removeAt(index);
+      }
+      
+      await prefs.setString('saved_training_sessions', jsonEncode(savedSessions));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ==================== TRAINING PLAYER MANAGEMENT ====================
+
+  static const String _trainingPlayersKey = 'training_players';
+  static const String _activeTrainingPlayerKey = 'active_training_player_id';
+
+  /// Save a list of training players
+  static Future<void> saveTrainingPlayers(List<dynamic> players) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final playersJson = players.map((p) => p.toJson()).toList();
+      await prefs.setString(_trainingPlayersKey, jsonEncode(playersJson));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Load all training players
+  static Future<List<dynamic>> loadTrainingPlayers() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final playersJsonString = prefs.getString(_trainingPlayersKey);
+
+      if (playersJsonString == null || playersJsonString.isEmpty) {
+        return [];
+      }
+
+      // We'll return raw JSON - the caller will convert to TrainingPlayer
+      final List<dynamic> playersJson = jsonDecode(playersJsonString);
+      return playersJson;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Get active/current training player ID
+  static Future<String?> getActiveTrainingPlayerId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_activeTrainingPlayerKey);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Set active/current training player ID
+  static Future<void> setActiveTrainingPlayerId(String playerId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_activeTrainingPlayerKey, playerId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete a training player and all their associated training entries
+  static Future<void> deleteTrainingPlayer(String playerId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Remove from players list
+      final playersJson = await loadTrainingPlayers();
+      final updatedPlayers = playersJson
+          .where((p) => (p as Map<String, dynamic>)['id'] != playerId)
+          .toList();
+      await prefs.setString(_trainingPlayersKey, jsonEncode(updatedPlayers));
+
+      // Remove all training entries for this player
+      final strengthData = await loadTrainingEntries('strength_condition');
+      final technicalData = await loadTrainingEntries('technical_performance');
+
+      final strengthEntries = (strengthData['entries'] as List)
+          .cast<TrainingEntry>()
+          .where((e) => e.playerId != playerId)
+          .toList();
+      final technicalEntries = (technicalData['entries'] as List)
+          .cast<TrainingEntry>()
+          .where((e) => e.playerId != playerId)
+          .toList();
+
+      await saveTrainingEntries(
+        strengthEntries,
+        strengthData['nextId'] as int,
+        'strength_condition',
+      );
+      await saveTrainingEntries(
+        technicalEntries,
+        technicalData['nextId'] as int,
+        'technical_performance',
+      );
+
+      // Clear active player if deleted
+      final activeId = await getActiveTrainingPlayerId();
+      if (activeId == playerId) {
+        await prefs.remove(_activeTrainingPlayerKey);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get all training entries for a specific player
+  static Future<List<dynamic>> getPlayerTrainingHistory(String playerId) async {
+    try {
+      final strengthData = await loadTrainingEntries('strength_condition');
+      final technicalData = await loadTrainingEntries('technical_performance');
+
+      final strengthEntries = (strengthData['entries'] as List)
+          .where((e) => (e as dynamic).playerId == playerId)
+          .toList();
+      final technicalEntries = (technicalData['entries'] as List)
+          .where((e) => (e as dynamic).playerId == playerId)
+          .toList();
+
+      return [...strengthEntries, ...technicalEntries];
+    } catch (e) {
+      return [];
     }
   }
 }
