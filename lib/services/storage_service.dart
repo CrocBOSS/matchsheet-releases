@@ -839,6 +839,212 @@ class StorageService {
     }
   }
 
+  /// Default technical skills for performance tracking
+  static List<Map<String, dynamic>> getDefaultTechnicalSkills() {
+    return [
+      {
+        'key': 'skillsAndComposure',
+        'label': 'Skills and Composure',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'aggression',
+        'label': 'Aggression',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'longThrows',
+        'label': 'Long Throws',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'distributionAccuracy',
+        'label': 'Distribution Accuracy',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'weakFoot',
+        'label': 'Weak Foot',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'scanningAwareness',
+        'label': 'Scanning and Awareness',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'targetPractice',
+        'label': 'Target Practice',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'defensiveHeader',
+        'label': 'Defensive Header',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'followUpBalls',
+        'label': 'Follow up balls',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'throughPasses',
+        'label': 'Through passes',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'lineDominance',
+        'label': 'Line Dominance',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'speed',
+        'label': 'Speed',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'longPasses',
+        'label': 'Long Passes',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'firstTouch',
+        'label': 'First Touch',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'killerInstinct',
+        'label': 'Killer Instinct',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'communication',
+        'label': 'Communication',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'overConfidence',
+        'label': 'Over Confidence',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'oneVOneSituations',
+        'label': '1v1 Situations',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'agility',
+        'label': 'Agility',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'turning',
+        'label': 'Turning',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'shooting',
+        'label': 'Shooting',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'crossing',
+        'label': 'Crossing',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'volleyShots',
+        'label': 'Volley shots',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'positioning',
+        'label': 'Positioning',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+      {
+        'key': 'defensiveMindset',
+        'label': 'Defensive Mindset',
+        'targetScore': 5,
+        'totalReps': 10,
+        'unit': 'reps',
+      },
+    ];
+  }
+
+  static Future<void> saveTechnicalSkills(List<Map<String, dynamic>> skills) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('technical_skills', jsonEncode(skills));
+    } catch (e) {
+      // Error saving skills silently
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> loadTechnicalSkills() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final skillsString = prefs.getString('technical_skills');
+
+      if (skillsString == null || skillsString.isEmpty) {
+        return getDefaultTechnicalSkills();
+      }
+
+      final List<dynamic> skillsJson = jsonDecode(skillsString);
+      return skillsJson.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return getDefaultTechnicalSkills();
+    }
+  }
+
   /// Save strength training session with name and timestamp
   static Future<void> saveStrengthTrainingSession(
     String sessionName,

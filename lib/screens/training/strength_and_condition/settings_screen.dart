@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/storage_service.dart';
+import '../../../services/exercise_config_service.dart';
 import 'strength_and_condition_screen.dart';
 
 class StrengthSettingsScreen extends StatefulWidget {
@@ -63,6 +64,8 @@ class _StrengthSettingsScreenState extends State<StrengthSettingsScreen> {
             })
         .toList();
     await StorageService.saveStrengthExercises(exercisesData);
+    // Clear the exercise config cache so updated names/units appear everywhere
+    ExerciseConfigService.clearCache();
   }
 
   void _deleteExercise(int index) {

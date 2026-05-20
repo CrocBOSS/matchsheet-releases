@@ -6,11 +6,43 @@ import '../../../services/storage_service.dart';
 
 class TechnicalPerformanceScreen extends StatefulWidget {
   final StatType? selectedStat;
+  final int? targetScore;
+  final int? totalReps;
   final TrainingPlayer player;
+
+  static final List<StatType> technicalStatTypes = [
+    StatType(key: 'skillsAndComposure', label: 'Skills and Composure'),
+    StatType(key: 'aggression', label: 'Aggression'),
+    StatType(key: 'longThrows', label: 'Long Throws'),
+    StatType(key: 'distributionAccuracy', label: 'Distribution Accuracy'),
+    StatType(key: 'weakFoot', label: 'Weak Foot'),
+    StatType(key: 'scanningAwareness', label: 'Scanning and Awareness'),
+    StatType(key: 'targetPractice', label: 'Target Practice'),
+    StatType(key: 'defensiveHeader', label: 'Defensive Header'),
+    StatType(key: 'followUpBalls', label: 'Follow up balls'),
+    StatType(key: 'throughPasses', label: 'Through passes'),
+    StatType(key: 'lineDominance', label: 'Line Dominance'),
+    StatType(key: 'speed', label: 'Speed'),
+    StatType(key: 'longPasses', label: 'Long Passes'),
+    StatType(key: 'firstTouch', label: 'First Touch'),
+    StatType(key: 'killerInstinct', label: 'Killer Instinct'),
+    StatType(key: 'communication', label: 'Communication'),
+    StatType(key: 'overConfidence', label: 'Over Confidence'),
+    StatType(key: 'oneVOneSituations', label: '1v1 Situations'),
+    StatType(key: 'agility', label: 'Agility'),
+    StatType(key: 'turning', label: 'Turning'),
+    StatType(key: 'shooting', label: 'Shooting'),
+    StatType(key: 'crossing', label: 'Crossing'),
+    StatType(key: 'volleyShots', label: 'Volley shots'),
+    StatType(key: 'positioning', label: 'Positioning'),
+    StatType(key: 'defensiveMindset', label: 'Defensive Mindset'),
+  ];
 
   const TechnicalPerformanceScreen({
     Key? key,
     this.selectedStat,
+    this.targetScore,
+    this.totalReps,
     required this.player,
   }) : super(key: key);
 
@@ -25,22 +57,11 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
   bool hasUnsavedChanges = false;
   late ScrollController _horizontalScrollController;
 
-  final List<StatType> technicalStatTypes = [
-    StatType(key: 'passingAccuracy', label: 'Pass%'),
-    StatType(key: 'dribbles', label: 'Dribbles'),
-    StatType(key: 'firstTouch', label: '1stTouch'),
-    StatType(key: 'ballControl', label: 'Control'),
-    StatType(key: 'positioning', label: 'Position'),
-    StatType(key: 'pace', label: 'Pace'),
-    StatType(key: 'decisionMaking', label: 'Decision'),
-    StatType(key: 'gameAwareness', label: 'Aware'),
-  ];
-
   @override
   void initState() {
     super.initState();
     _horizontalScrollController = ScrollController();
-    statTypes = technicalStatTypes;
+    statTypes = TechnicalPerformanceScreen.technicalStatTypes;
     _loadData();
   }
 
@@ -76,6 +97,12 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
       playerName: widget.player.name,
       position: widget.player.position,
       trainingType: 'technical_performance',
+      customStats: {
+        if (widget.selectedStat != null && widget.targetScore != null)
+          '${widget.selectedStat!.key}_targetScore': widget.targetScore!,
+        if (widget.selectedStat != null && widget.totalReps != null)
+          '${widget.selectedStat!.key}_totalReps': widget.totalReps!,
+      },
     );
 
     setState(() {
@@ -194,11 +221,24 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
             else
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Tracking: ${widget.selectedStat!.label}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tracking: ${widget.selectedStat!.label}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (widget.targetScore != null && widget.totalReps != null)
+                      Text(
+                        'Target score: ${widget.targetScore} • Total reps: ${widget.totalReps}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey[700],
+                            ),
+                      ),
+                  ],
                 ),
               ),
             Expanded(

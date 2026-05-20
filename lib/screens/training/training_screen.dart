@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/stat_type.dart';
 import '../../models/training_player.dart';
 import '../../services/storage_service.dart';
 import 'strength_and_condition/strength_and_condition_screen.dart';
@@ -8,17 +7,6 @@ import 'technical_performance/technical_setup_screen.dart';
 
 class TrainingScreen extends StatefulWidget {
   final TrainingPlayer player;
-
-  static final List<StatType> technicalStatTypes = [
-    StatType(key: 'passingAccuracy', label: 'Pass%'),
-    StatType(key: 'dribbles', label: 'Dribbles'),
-    StatType(key: 'firstTouch', label: '1stTouch'),
-    StatType(key: 'ballControl', label: 'Control'),
-    StatType(key: 'positioning', label: 'Position'),
-    StatType(key: 'pace', label: 'Pace'),
-    StatType(key: 'decisionMaking', label: 'Decision'),
-    StatType(key: 'gameAwareness', label: 'Aware'),
-  ];
 
   const TrainingScreen({Key? key, required this.player}) : super(key: key);
 
@@ -132,7 +120,6 @@ class _TrainingScreenState extends State<TrainingScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => TechnicalSetupScreen(
-                            statTypes: TrainingScreen.technicalStatTypes,
                             player: widget.player,
                           ),
                         ),

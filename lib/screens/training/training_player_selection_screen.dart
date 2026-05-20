@@ -104,7 +104,7 @@ class _TrainingPlayerSelectionScreenState
               const SizedBox(height: 12),
               StatefulBuilder(
                 builder: (context, setState) => DropdownButtonFormField<String>(
-                  value: selectedPosition,
+                  initialValue: selectedPosition,
                   decoration: const InputDecoration(
                     labelText: 'Position',
                     border: OutlineInputBorder(),
@@ -292,7 +292,7 @@ class _TrainingPlayerSelectionScreenState
                                 ? Theme.of(context)
                                     .colorScheme
                                     .primaryContainer
-                                : Theme.of(context).colorScheme.surfaceVariant,
+                                : Theme.of(context).colorScheme.surfaceContainerHighest,
                             child: ListTile(
                               onTap: () => _selectPlayer(player),
                               leading: Container(

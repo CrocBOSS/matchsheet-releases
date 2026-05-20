@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/training_entry.dart';
 import '../../../models/training_player.dart';
 import '../../../services/storage_service.dart';
+import '../../../services/exercise_config_service.dart';
 
 class SavedTrainingScreen extends StatefulWidget {
   final TrainingPlayer player;
@@ -21,9 +22,12 @@ class _SavedTrainingScreenState extends State<SavedTrainingScreen> {
   @override
   void initState() {
     super.initState();
+    // Initialize the sessions future immediately
     _savedSessionsFuture = StorageService.loadSavedStrengthTrainingSessions(
       playerId: widget.player.id,
     );
+    // Initialize exercise configs in the background
+    ExerciseConfigService.initialize();
   }
 
   Future<void> _deleteSession(int index) async {
@@ -46,20 +50,14 @@ class _SavedTrainingScreenState extends State<SavedTrainingScreen> {
     }
   }
 
-  /// Get the unit for a given exercise key
+  /// Get the unit for a given exercise key from the centralized config
   String _getExerciseUnit(String exerciseKey) {
-    switch (exerciseKey) {
-      case 'crabWalk':
-        return 'meters';
-      case 'calfRises':
-        return 'reps';
-      case 'sitUps':
-        return 'reps';
-      case 'pushUps':
-        return 'reps';
-      default:
-        return 'reps';
-    }
+    return ExerciseConfigService.getExerciseUnit(exerciseKey);
+  }
+
+  /// Get the display label for an exercise from the centralized config
+  String _getExerciseLabel(String exerciseKey) {
+    return ExerciseConfigService.getExerciseLabel(exerciseKey);
   }
 
   @override
@@ -254,7 +252,6 @@ class _SavedTrainingScreenState extends State<SavedTrainingScreen> {
                 
                 // Post-process to separate main stats into 'right' for per-leg exercises
                 for (final exercise in exerciseMap.entries) {
-                  final exerciseName = exercise.key;
                   final legStats = exercise.value;
                   
                   // If we have 'main' stats AND 'left' stats, the 'main' ones are actually 'right' leg
@@ -272,7 +269,7 @@ class _SavedTrainingScreenState extends State<SavedTrainingScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 8, top: 8, bottom: 4),
                       child: Text(
-                        exerciseName,
+                        _getExerciseLabel(exerciseName),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.blue[700],
                           fontWeight: FontWeight.w500,

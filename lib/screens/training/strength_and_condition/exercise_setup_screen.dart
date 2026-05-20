@@ -350,7 +350,7 @@ class _ExerciseSetupScreenState extends State<ExerciseSetupScreen> {
                                                   color: Colors.grey,
                                                 ),
                                           ),
-                                          if (isSelected && !hasConfiguredTargets)
+                                          if (!(isSelected && hasConfiguredTargets))
                                             Padding(
                                               padding: const EdgeInsets.only(top: 8),
                                               child: Text(
