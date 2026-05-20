@@ -579,7 +579,7 @@ class StorageService {
       // Save back
       await prefs.setString('saved_games', jsonEncode(savedGames));
     } catch (e) {
-      rethrow;
+      // Error saving game session silently
     }
   }
 
@@ -629,7 +629,7 @@ class StorageService {
         await prefs.setString('saved_games', jsonEncode(savedGames));
       }
     } catch (e) {
-      rethrow;
+      // Error deleting session silently
     }
   }
 
@@ -671,7 +671,7 @@ class StorageService {
         await prefs.setString('saved_games', jsonEncode(savedGames));
       }
     } catch (e) {
-      rethrow;
+      // Error renaming unsaved match silently
     }
   }
 
@@ -688,7 +688,7 @@ class StorageService {
         await prefs.setString('saved_games', jsonEncode(savedGames));
       }
     } catch (e) {
-      rethrow;
+      // Error deleting unsaved match silently
     }
   }
 
@@ -1075,7 +1075,7 @@ class StorageService {
       // Save back
       await prefs.setString('saved_training_sessions', jsonEncode(savedSessions));
     } catch (e) {
-      rethrow;
+      // Error saving strength training session silently
     }
   }
 
@@ -1148,7 +1148,7 @@ class StorageService {
       // Save back
       await prefs.setString('saved_technical_training_sessions', jsonEncode(savedSessions));
     } catch (e) {
-      rethrow;
+      // Error saving technical training session silently
     }
   }
 
@@ -1203,7 +1203,7 @@ class StorageService {
       
       await prefs.setString('saved_technical_training_sessions', jsonEncode(savedSessions));
     } catch (e) {
-      rethrow;
+      // Error deleting technical training session silently
     }
   }
 
@@ -1235,7 +1235,7 @@ class StorageService {
       
       await prefs.setString('saved_training_sessions', jsonEncode(savedSessions));
     } catch (e) {
-      rethrow;
+      // Error deleting strength training session silently
     }
   }
 
@@ -1251,7 +1251,7 @@ class StorageService {
       final playersJson = players.map((p) => p.toJson()).toList();
       await prefs.setString(_trainingPlayersKey, jsonEncode(playersJson));
     } catch (e) {
-      rethrow;
+      // Error saving training players silently
     }
   }
 
@@ -1289,7 +1289,7 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_activeTrainingPlayerKey, playerId);
     } catch (e) {
-      rethrow;
+      // Error setting active training player ID silently
     }
   }
 
@@ -1335,7 +1335,7 @@ class StorageService {
         await prefs.remove(_activeTrainingPlayerKey);
       }
     } catch (e) {
-      rethrow;
+      // Error clearing active training player silently
     }
   }
 
