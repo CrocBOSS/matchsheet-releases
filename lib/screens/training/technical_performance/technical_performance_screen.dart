@@ -55,7 +55,6 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
   List<StatType> statTypes = [];
   int nextEntryId = 1;
   bool hasUnsavedChanges = false;
-  late ScrollController _horizontalScrollController;
   
   // For tracking a single skill
   int successCount = 0;
@@ -65,14 +64,12 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
   @override
   void initState() {
     super.initState();
-    _horizontalScrollController = ScrollController();
     statTypes = TechnicalPerformanceScreen.technicalStatTypes;
     _loadData();
   }
 
   @override
   void dispose() {
-    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -335,7 +332,10 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        await _saveData();
+        // Only save on the skill selection screen (no selectedStat)
+        if (widget.selectedStat == null) {
+          await _saveData();
+        }
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -438,7 +438,7 @@ class _TechnicalPerformanceScreenState extends State<TechnicalPerformanceScreen>
                             currentScore.toStringAsFixed(1),
                             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: currentScore >= widget.targetScore! ? Colors.green : Colors.orange,
+                              color: currentScore >= (widget.targetScore ?? 0) ? Colors.green : Colors.orange,
                             ),
                           ),
                         ],
@@ -873,6 +873,14 @@ class _StatInputState extends State<_StatInput> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.value.toString());
+  }
+
+  @override
+  void didUpdateWidget(_StatInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _controller.text = widget.value.toString();
+    }
   }
 
   @override
