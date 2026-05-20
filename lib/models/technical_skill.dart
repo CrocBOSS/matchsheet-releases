@@ -3,7 +3,7 @@ import 'stat_type.dart';
 class TechnicalSkill {
   final String key;
   final String label;
-  final int targetScore;
+  final double targetScore;
   final int totalReps;
   final String unit;
 
@@ -29,7 +29,7 @@ class TechnicalSkill {
     return TechnicalSkill(
       key: json['key'] as String,
       label: json['label'] as String,
-      targetScore: json['targetScore'] as int? ?? 5,
+      targetScore: (json['targetScore'] as num?)?.toDouble() ?? 5.0,
       totalReps: json['totalReps'] as int? ?? 10,
       unit: json['unit'] as String? ?? 'reps',
     );
@@ -42,7 +42,7 @@ class TechnicalSkill {
   TechnicalSkill copyWith({
     String? key,
     String? label,
-    int? targetScore,
+    double? targetScore,
     int? totalReps,
     String? unit,
   }) {

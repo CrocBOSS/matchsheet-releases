@@ -5,6 +5,7 @@ import '../../../models/training_player.dart';
 import '../../../services/storage_service.dart';
 import 'technical_performance_screen.dart';
 import 'technical_settings_screen.dart';
+import 'saved_training_screen.dart';
 
 class TechnicalSetupScreen extends StatefulWidget {
   final TrainingPlayer player;
@@ -21,7 +22,7 @@ class TechnicalSetupScreen extends StatefulWidget {
 class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
   List<TechnicalSkill> skills = [];
   TechnicalSkill? selectedSkill;
-  int selectedTargetScore = 5;
+  double selectedTargetScore = 5.0;
   int selectedTotalReps = 10;
   String selectedUnit = 'reps';
   bool hasConfiguredTargets = false;
@@ -56,7 +57,7 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
         selectedSkill = null;
       }
       if (selectedSkill != null) {
-        selectedTargetScore = selectedSkill!.targetScore;
+        selectedTargetScore = selectedSkill!.targetScore.toDouble();
         selectedTotalReps = selectedSkill!.totalReps;
         selectedUnit = selectedSkill!.unit;
       }
@@ -68,7 +69,7 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
   void _selectSkillAndConfigure(TechnicalSkill skill) {
     setState(() {
       selectedSkill = skill;
-      selectedTargetScore = skill.targetScore;
+      selectedTargetScore = skill.targetScore.toDouble();
       selectedTotalReps = skill.totalReps;
       selectedUnit = skill.unit;
       hasConfiguredTargets = false;
@@ -79,51 +80,56 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
   void _showSkillConfigDialog(TechnicalSkill skill) {
     final repsController = TextEditingController(text: selectedTotalReps.toString());
     final unitController = TextEditingController(text: selectedUnit);
-    int scoreValue = selectedTargetScore;
+    double scoreValue = selectedTargetScore;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Configure ${skill.label}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<int>(
-              initialValue: scoreValue,
-              decoration: const InputDecoration(
-                labelText: 'Target score',
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<double>(
+                initialValue: scoreValue,
+                decoration: const InputDecoration(
+                  labelText: 'Target score',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(
+                  20,
+                  (index) {
+                    final value = (index + 1) * 0.5;
+                    return DropdownMenuItem(
+                      value: value,
+                      child: Text(value == value.toInt() ? '${value.toInt()}' : '$value'),
+                    );
+                  },
+                ),
+                onChanged: (value) {
+                  scoreValue = value ?? scoreValue;
+                },
               ),
-              items: List.generate(
-                10,
-                (index) => DropdownMenuItem(
-                  value: index + 1,
-                  child: Text('${index + 1}'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: repsController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Total reps',
+                  border: OutlineInputBorder(),
                 ),
               ),
-              onChanged: (value) {
-                scoreValue = value ?? scoreValue;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: repsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Total reps',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextField(
+                controller: unitController,
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  hintText: 'reps',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: unitController,
-              decoration: const InputDecoration(
-                labelText: 'Unit',
-                hintText: 'reps',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -135,10 +141,10 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
               final repsValue = int.tryParse(repsController.text) ?? 0;
               final unitValue = unitController.text.trim().isEmpty ? 'reps' : unitController.text.trim();
 
-              if (scoreValue < 1 || scoreValue > 10) {
+              if (scoreValue < 0.5 || scoreValue > 10) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Score must be between 1 and 10'),
+                    content: Text('Score must be between 0.5 and 10'),
                     duration: Duration(milliseconds: 1500),
                   ),
                 );
@@ -204,6 +210,15 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
     await _loadSkills(preserveSelection: true);
   }
 
+  void _openSavedTraining() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SavedTechnicalTrainingScreen(player: widget.player),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,6 +232,28 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
             icon: const Icon(Icons.settings),
             tooltip: 'Technical skill settings',
             onPressed: _openSettings,
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'saved_training') {
+                _openSavedTraining();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'saved_training',
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.history, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Saved Training'),
+                  ],
+                ),
+              ),
+            ],
+            icon: const Icon(Icons.menu),
+            tooltip: 'Menu',
           ),
         ],
       ),
@@ -297,32 +334,39 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
                                           : null,
                                     ),
                                     const SizedBox(width: 16),
-                                    Expanded(
+                                    Flexible(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
                                             skill.label,
                                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                   fontWeight: FontWeight.w600,
                                                 ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: 2),
                                           Text(
                                             isSelected && hasConfiguredTargets
-                                                ? 'Target Score $selectedTargetScore • ${selectedTotalReps} ${selectedUnit}'
+                                                ? 'Target Score $selectedTargetScore • $selectedTotalReps $selectedUnit'
                                                 : 'Target Score ${skill.targetScore} • ${skill.totalReps} ${skill.unit}',
                                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                                   color: Colors.grey[700],
                                                 ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
-                                          const SizedBox(height: 4),
+                                          const SizedBox(height: 2),
                                           Text(
                                             'Tap to configure',
                                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                                   color: Theme.of(context).colorScheme.primary,
                                                   fontStyle: FontStyle.italic,
                                                 ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ),

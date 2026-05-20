@@ -162,7 +162,7 @@ class _EditSkillDialog extends StatefulWidget {
 
 class _EditSkillDialogState extends State<_EditSkillDialog> {
   late TextEditingController labelController;
-  late int selectedScore;
+  late double selectedScore;
   late TextEditingController repsController;
   late TextEditingController unitController;
 
@@ -196,15 +196,18 @@ class _EditSkillDialogState extends State<_EditSkillDialog> {
               decoration: const InputDecoration(labelText: 'Skill Name'),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
+            DropdownButtonFormField<double>(
               initialValue: selectedScore,
               decoration: const InputDecoration(labelText: 'Target score'),
               items: List.generate(
-                10,
-                (index) => DropdownMenuItem(
-                  value: index + 1,
-                  child: Text('${index + 1}'),
-                ),
+                20,
+                (index) {
+                  final value = (index + 1) * 0.5;
+                  return DropdownMenuItem(
+                    value: value,
+                    child: Text(value == value.toInt() ? '${value.toInt()}' : '$value'),
+                  );
+                },
               ),
               onChanged: (value) {
                 setState(() {
@@ -280,7 +283,7 @@ class _AddSkillDialog extends StatefulWidget {
 
 class _AddSkillDialogState extends State<_AddSkillDialog> {
   late TextEditingController labelController;
-  late int selectedScore;
+  late double selectedScore;
   late TextEditingController repsController;
   late TextEditingController unitController;
 
@@ -288,7 +291,7 @@ class _AddSkillDialogState extends State<_AddSkillDialog> {
   void initState() {
     super.initState();
     labelController = TextEditingController();
-    selectedScore = 5;
+    selectedScore = 5.0;
     repsController = TextEditingController(text: '10');
     unitController = TextEditingController(text: 'reps');
   }
@@ -314,15 +317,18 @@ class _AddSkillDialogState extends State<_AddSkillDialog> {
               decoration: const InputDecoration(labelText: 'Skill Name'),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
+            DropdownButtonFormField<double>(
               initialValue: selectedScore,
               decoration: const InputDecoration(labelText: 'Target score'),
               items: List.generate(
-                10,
-                (index) => DropdownMenuItem(
-                  value: index + 1,
-                  child: Text('${index + 1}'),
-                ),
+                20,
+                (index) {
+                  final value = (index + 1) * 0.5;
+                  return DropdownMenuItem(
+                    value: value,
+                    child: Text(value == value.toInt() ? '${value.toInt()}' : '$value'),
+                  );
+                },
               ),
               onChanged: (value) {
                 setState(() {

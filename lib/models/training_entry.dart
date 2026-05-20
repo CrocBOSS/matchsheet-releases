@@ -7,7 +7,7 @@ class TrainingEntry {
   String trainingType; // "strength_condition" or "technical_performance"
   String notes;
   DateTime date;
-  Map<String, int> customStats; // Store custom training stats
+  Map<String, dynamic> customStats; // Store custom training stats
 
   TrainingEntry({
     required this.id,
@@ -18,7 +18,7 @@ class TrainingEntry {
     required this.trainingType,
     this.notes = '',
     DateTime? date,
-    Map<String, int>? customStats,
+    Map<String, dynamic>? customStats,
   }) : date = date ?? DateTime.now(),
        customStats = customStats ?? {};
 
@@ -46,7 +46,7 @@ class TrainingEntry {
       trainingType: json['trainingType'] as String,
       notes: json['notes'] as String? ?? '',
       date: json['date'] != null ? DateTime.parse(json['date'] as String) : DateTime.now(),
-      customStats: Map<String, int>.from(
+      customStats: Map<String, dynamic>.from(
         (json['customStats'] as Map<String, dynamic>?) ?? {},
       ),
     );
@@ -61,7 +61,7 @@ class TrainingEntry {
     String? trainingType,
     String? notes,
     DateTime? date,
-    Map<String, int>? customStats,
+    Map<String, dynamic>? customStats,
   }) {
     return TrainingEntry(
       id: id ?? this.id,
