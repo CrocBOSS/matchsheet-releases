@@ -93,7 +93,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
                   Icons.fitness_center,
                   size: 64,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -150,7 +150,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
                   Icons.sports_soccer,
                   size: 64,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -218,205 +218,6 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
     return counts;
   }
 
-
-  Widget _buildStrengthEntryCard(TrainingEntry entry) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  _formatDate(entry.date),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Exercise Data',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 8),
-            if (entry.customStats.isEmpty)
-              Text(
-                'No exercise data recorded',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-              )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: entry.customStats.entries.map((e) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          e.key,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        Text(
-                          '${e.value}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            if (entry.notes.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Notes',
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                entry.notes,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTechnicalEntryCard(TrainingEntry entry) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  _formatDate(entry.date),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Skill Ratings',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 8),
-            if (entry.customStats.isEmpty)
-              Text(
-                'No skill ratings recorded',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey,
-                    ),
-              )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: entry.customStats.entries.map((e) {
-                  final rating = _parseRating(e.value);
-                  final color = _getRatingColor(rating);
-                  final displayRating = rating % 1 == 0
-                      ? rating.toInt().toString()
-                      : rating.toStringAsFixed(1);
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              e.key,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            Text(
-                              '$displayRating/10',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: color,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        LinearProgressIndicator(
-                          value: (rating.clamp(0, 10)) / 10,
-                          backgroundColor: Colors.grey[300],
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                          minHeight: 6,
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            if (entry.notes.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Notes',
-                style: Theme.of(context).textTheme.labelSmall,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                entry.notes,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final dateOnly = DateTime(date.year, date.month, date.day);
-
-    if (dateOnly == today) {
-      return 'Today at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } else if (dateOnly == yesterday) {
-      return 'Yesterday at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-    }
-  }
-
-  Color _getRatingColor(double rating) {
-    if (rating >= 8) return Colors.green;
-    if (rating >= 6) return Colors.blue;
-    if (rating >= 4) return Colors.orange;
-    return Colors.red;
-  }
-
-  double _parseRating(dynamic value) {
-    if (value is num) {
-      return value.toDouble();
-    }
-    return double.tryParse('$value') ?? 0.0;
-  }
 
   Widget _buildSimpleSummaryCard({
     required String title,
@@ -506,17 +307,6 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
         ],
       ),
     );
-  }
-
-  Map<String, int> _countCustomStatKeys(List<TrainingEntry> entries) {
-    final counts = <String, int>{};
-    for (final entry in entries) {
-      final exerciseNames = _getUniqueExerciseNames(entry);
-      for (final name in exerciseNames) {
-        counts[name] = (counts[name] ?? 0) + 1;
-      }
-    }
-    return counts;
   }
 
   Set<String> _getUniqueExerciseNames(TrainingEntry entry) {
