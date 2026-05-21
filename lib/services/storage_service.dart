@@ -1054,13 +1054,16 @@ class StorageService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toString();
 
-      // Create session data
+      // Create session data with structured strength training detail
       final sessionData = {
+        'sessionId': sessionId,
         'name': sessionName,
         'timestamp': DateTime.now().toIso8601String(),
         'sport': 'strength_condition',
         'entries': entries.map((e) => e.toJson()).toList(),
+        'structuredEntries': entries.map(_buildStructuredStrengthEntry).toList(),
         'nextId': nextId,
         'playerId': playerId,
       };
@@ -1077,6 +1080,127 @@ class StorageService {
     } catch (e) {
       // Error saving strength training session silently
     }
+  }
+
+  static Map<String, dynamic> _buildStructuredStrengthEntry(TrainingEntry entry) {
+    final groupedExercises = <String, Map<String, Map<int, int>>>{};
+
+    for (final stat in entry.customStats.entries) {
+      final match = RegExp(r'^(.*?)(?:_left)?_set(\d+)$').firstMatch(stat.key);      if (match == null) {
+        continue;
+      }
+
+      final exerciseKey = match.group(1)!;
+      final setNumber = int.tryParse(match.group(2)!) ?? 0;
+      final isLeftLeg = stat.key.contains('_left_set');
+      final legKey = isLeftLeg ? 'left' : 'right';
+
+      groupedExercises.putIfAbsent(exerciseKey, () => <String, Map<int, int>>{});
+      groupedExercises[exerciseKey]!.putIfAbsent(legKey, () => <int, int>{});
+      groupedExercises[exerciseKey]![legKey]![setNumber] = stat.value is int ? stat.value as int : int.tryParse('${stat.value}') ?? 0;
+    }
+
+    final exercises = <Map<String, dynamic>>[];
+    for (final exerciseEntry in groupedExercises.entries) {
+      final exerciseKey = exerciseEntry.key;
+      final legs = exerciseEntry.value;
+      final isPerLeg = legs.length > 1 || legs.containsKey('left');
+      final exerciseLabel = _formatExerciseLabel(exerciseKey);
+      final unit = _getExerciseUnit(exerciseKey);
+
+      if (isPerLeg) {
+        final leftSets = legs['left']?.entries.map((e) => {
+              'set': e.key,
+              'reps': e.value,
+            }).toList() ?? [];
+        final rightSets = legs['right']?.entries.map((e) => {
+              'set': e.key,
+              'reps': e.value,
+            }).toList() ?? [];
+
+        exercises.add({
+          'exerciseKey': exerciseKey,
+          'exerciseLabel': exerciseLabel,
+          'isPerLeg': true,
+          'unit': unit,
+          'legs': {
+            'left': leftSets,
+            'right': rightSets,
+          },
+        });
+      } else {
+        final sets = legs['right']?.entries.map((e) => {
+              'set': e.key,
+              'reps': e.value,
+            }).toList() ?? [];
+
+        exercises.add({
+          'exerciseKey': exerciseKey,
+          'exerciseLabel': exerciseLabel,
+          'isPerLeg': false,
+          'unit': unit,
+          'sets': sets,
+        });
+      }
+    }
+
+    return {
+      'entryId': entry.id,
+      'playerId': entry.playerId,
+      'playerNumber': entry.playerNumber,
+      'playerName': entry.playerName,
+      'position': entry.position,
+      'trainingType': entry.trainingType,
+      'notes': entry.notes,
+      'date': entry.date.toIso8601String(),
+      'customStats': entry.customStats,
+      'exercises': exercises,
+    };
+  }
+
+  static Map<String, dynamic> _buildStructuredTechnicalEntry(
+    String skillKey,
+    String skillLabel,
+    int successful,
+    int neutral,
+    int fail,
+    double currentScore,
+    double? targetScore,
+    int? totalReps,
+  ) {
+    return {
+      'skillKey': skillKey,
+      'skillLabel': skillLabel,
+      'attempts': {
+        'successful': successful,
+        'neutral': neutral,
+        'fail': fail,
+        'total': successful + neutral + fail,
+      },
+      'currentScore': currentScore,
+      'targetScore': targetScore,
+      'totalReps': totalReps,
+    };
+  }
+
+  static String _formatExerciseLabel(String key) {
+    final label = key.replaceAllMapped(
+      RegExp(r'([a-z])([A-Z])'),
+      (match) => '${match.group(1)} ${match.group(2)}',
+    );
+    final cleaned = label.replaceAll(RegExp(r'[_\-]+'), ' ').trim();
+    return cleaned
+        .split(' ')
+        .where((word) => word.isNotEmpty)
+        .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
+        .join(' ');
+  }
+
+  static String _getExerciseUnit(String exerciseKey) {
+    if (exerciseKey == 'crabWalk') {
+      return 'done';
+    }
+    return 'reps';
   }
 
   /// Load saved strength training sessions, optionally filtered by playerId
@@ -1119,9 +1243,11 @@ class StorageService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toString();
 
-      // Create session data
+      // Create session data with structured technical skill details
       final sessionData = {
+        'sessionId': sessionId,
         'name': sessionName,
         'timestamp': DateTime.now().toIso8601String(),
         'type': 'technical_skill',
@@ -1136,6 +1262,16 @@ class StorageService {
         'playerName': playerName,
         'targetScore': targetScore,
         'totalReps': totalReps,
+        'structuredData': _buildStructuredTechnicalEntry(
+          skillKey,
+          skillLabel,
+          successful,
+          neutral,
+          fail,
+          currentScore,
+          targetScore,
+          totalReps,
+        ),
       };
 
       // Get existing saved sessions list
@@ -1176,13 +1312,25 @@ class StorageService {
   }
 
   /// Delete technical training session
-  static Future<void> deleteTechnicalTrainingSession(int index, {String? playerId}) async {
+  static Future<void> deleteTechnicalTrainingSession(
+    int index, {
+    String? playerId,
+    String? sessionId,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedSessionsJson = prefs.getString('saved_technical_training_sessions') ?? '[]';
       final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
 
-      if (playerId != null) {
+      if (sessionId != null && sessionId.isNotEmpty) {
+        for (int i = 0; i < savedSessions.length; i++) {
+          final session = savedSessions[i] as Map<String, dynamic>;
+          if ((session['sessionId'] as String?) == sessionId) {
+            savedSessions.removeAt(i);
+            break;
+          }
+        }
+      } else if (playerId != null) {
         // Find and delete the index-th session belonging to this player
         int playerSessionCount = 0;
         for (int i = 0; i < savedSessions.length; i++) {
@@ -1208,13 +1356,25 @@ class StorageService {
   }
 
   /// Delete a saved strength training session by index
-  static Future<void> deleteStrengthTrainingSession(int index, {String? playerId}) async {
+  static Future<void> deleteStrengthTrainingSession(
+    int index, {
+    String? playerId,
+    String? sessionId,
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedSessionsJson = prefs.getString('saved_training_sessions') ?? '[]';
       final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
 
-      if (playerId != null) {
+      if (sessionId != null && sessionId.isNotEmpty) {
+        for (int i = 0; i < savedSessions.length; i++) {
+          final session = savedSessions[i] as Map<String, dynamic>;
+          if ((session['sessionId'] as String?) == sessionId) {
+            savedSessions.removeAt(i);
+            break;
+          }
+        }
+      } else if (playerId != null) {
         // Find and delete the index-th session belonging to this player
         int playerSessionCount = 0;
         for (int i = 0; i < savedSessions.length; i++) {

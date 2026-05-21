@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../models/stat_type.dart';
 import '../../../models/technical_skill.dart';
 import '../../../models/training_player.dart';
 import '../../../services/storage_service.dart';
