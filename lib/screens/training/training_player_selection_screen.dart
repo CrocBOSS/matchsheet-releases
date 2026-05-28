@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../models/training_player.dart';
 import '../../services/storage_service.dart';
 import 'player_stats_screen.dart';
@@ -214,6 +217,132 @@ class _TrainingPlayerSelectionScreenState
     }
   }
 
+  Future<void> _exportPlayerData(TrainingPlayer player) async {
+    // Show export options dialog
+    final exportType = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Training Data'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Select data to export for ${player.name}:',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.fitness_center, color: Colors.red),
+              title: const Text('Strength & Condition Only'),
+              onTap: () => Navigator.pop(context, 'strength'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.sports_soccer, color: Colors.green),
+              title: const Text('Technical Performance Only'),
+              onTap: () => Navigator.pop(context, 'technical'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.all_inclusive, color: Colors.purple),
+              title: const Text('Both (Complete Export)'),
+              onTap: () => Navigator.pop(context, 'both'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (exportType == null) return;
+
+    // Load the data based on selection
+    final includeStrength = exportType == 'strength' || exportType == 'both';
+    final includeTechnical = exportType == 'technical' || exportType == 'both';
+
+    List<Map<String, dynamic>>? strengthSessions;
+    List<Map<String, dynamic>>? technicalSessions;
+
+    if (includeStrength) {
+      strengthSessions = await StorageService.loadSavedStrengthTrainingSessions(
+        playerId: player.id,
+      );
+    }
+
+    if (includeTechnical) {
+      technicalSessions = await StorageService.loadSavedTechnicalTrainingSessions(
+        playerId: player.id,
+      );
+    }
+
+    // Check if there's any data to export
+    final hasStrengthData = strengthSessions != null && strengthSessions.isNotEmpty;
+    final hasTechnicalData = technicalSessions != null && technicalSessions.isNotEmpty;
+
+    if (!hasStrengthData && !hasTechnicalData) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No training data available to export'),
+            duration: Duration(milliseconds: 1500),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Generate export content
+    final content = StorageService.generateTrainingDataExport(
+      playerName: player.name,
+      playerNumber: player.number,
+      position: player.position,
+      includeStrength: includeStrength,
+      includeTechnical: includeTechnical,
+      strengthSessions: strengthSessions,
+      technicalSessions: technicalSessions,
+    );
+
+    try {
+      // Save to temp directory and share
+      final fileName = 'training_${player.name.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.txt';
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsString(content);
+
+      // Share the file
+      // ignore: deprecated_member_use
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Training Data Export - ${player.name}',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Training data exported successfully!'),
+            duration: Duration(milliseconds: 1500),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            duration: const Duration(milliseconds: 1500),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _proceedToTraining() async {
     if (_selectedPlayer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -343,6 +472,16 @@ class _TrainingPlayerSelectionScreenState
                                       ],
                                     ),
                                     onTap: () => _viewPlayerStats(player),
+                                  ),
+                                  PopupMenuItem(
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.file_download_outlined),
+                                        SizedBox(width: 12),
+                                        Text('Export Data'),
+                                      ],
+                                    ),
+                                    onTap: () => _exportPlayerData(player),
                                   ),
                                   PopupMenuItem(
                                     child: const Row(
