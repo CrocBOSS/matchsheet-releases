@@ -468,7 +468,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
 
   Player _getUpdatedPlayer(Player player, String statName, int increment) {
     if (currentHalf == 1) {
-      // First half - use customStats map
+      // First half - use customStats map (same logic as second half)
       final updatedCustomStats = Map<String, int>.from(player.customStats);
       updatedCustomStats[statName] = (updatedCustomStats[statName] ?? 0) + increment;
       return player.copyWith(customStats: updatedCustomStats);

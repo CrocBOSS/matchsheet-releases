@@ -71,14 +71,14 @@ class Player {
   }
 
   factory Player.fromJson(Map<String, dynamic> json) {
-    // Standard fields
+    // Standard fields that should NOT be included in customStats
     final standardFields = {
-      'id', 'number', 'name', 'teamName', 'position', 'completedPasses', 'interceptions', 
-      'turnovers', 'tackles', 'fouls', 'shotsOnTarget', 'assists', 
-      'goals', 'goalkeeperSaves', 'yellowCards', 'comments', 'rating', 'secondHalfStats'
+      'id', 'number', 'name', 'teamName', 'position', 
+      'comments', 'rating', 'secondHalfStats'
     };
     
-    // Extract custom stats (any fields not in standard list)
+    // Extract custom stats (any integer fields not in standard list)
+    // This includes the stat fields like completedPasses, interceptions, etc.
     final customStats = <String, int>{};
     for (final entry in json.entries) {
       if (!standardFields.contains(entry.key) && entry.value is int) {
@@ -92,16 +92,16 @@ class Player {
       name: json['name'] as String,
       teamName: json['teamName'] as String? ?? 'Team A',
       position: json['position'] as String? ?? '',
-      completedPasses: json['completedPasses'] as int? ?? 0,
-      interceptions: json['interceptions'] as int? ?? 0,
-      turnovers: json['turnovers'] as int? ?? 0,
-      tackles: json['tackles'] as int? ?? 0,
-      fouls: json['fouls'] as int? ?? 0,
-      shotsOnTarget: json['shotsOnTarget'] as int? ?? 0,
-      assists: json['assists'] as int? ?? 0,
-      goals: json['goals'] as int? ?? 0,
-      goalkeeperSaves: json['goalkeeperSaves'] as int? ?? 0,
-      yellowCards: json['yellowCards'] as int? ?? 0,
+      completedPasses: 0,  // Always 0, actual value in customStats
+      interceptions: 0,     // Always 0, actual value in customStats
+      turnovers: 0,         // Always 0, actual value in customStats
+      tackles: 0,           // Always 0, actual value in customStats
+      fouls: 0,             // Always 0, actual value in customStats
+      shotsOnTarget: 0,     // Always 0, actual value in customStats
+      assists: 0,           // Always 0, actual value in customStats
+      goals: 0,             // Always 0, actual value in customStats
+      goalkeeperSaves: 0,   // Always 0, actual value in customStats
+      yellowCards: 0,       // Always 0, actual value in customStats
       comments: json['comments'] as String? ?? '',
       rating: json['rating'] as int? ?? 0,
       customStats: customStats,
