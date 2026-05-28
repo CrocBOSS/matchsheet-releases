@@ -258,6 +258,46 @@ class _SavedMatchesScreenState extends State<SavedMatchesScreen> with WidgetsBin
   }
 
   Future<void> _exportMatch(Map<String, dynamic> match) async {
+    // Show format selection dialog
+    final exportFormat = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Format', style: TextStyle(fontSize: 16)),
+        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select export format:',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description, color: Colors.blue),
+              title: const Text('Text File (.txt)', style: TextStyle(fontSize: 13)),
+              onTap: () => Navigator.pop(context, 'txt'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Excel File (.xlsx)', style: TextStyle(fontSize: 13)),
+              onTap: () => Navigator.pop(context, 'excel'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+
+    if (exportFormat == null) return;
+
     try {
       // Parse session data using helper function
       final (playersData, statTypesData, _) = StorageService.parseSessionData(match);
@@ -265,14 +305,32 @@ class _SavedMatchesScreenState extends State<SavedMatchesScreen> with WidgetsBin
       // Get team name from match data if available
       final teamName = match['teamName'] as String? ?? 'Team A';
 
-      // Generate match sheet text using StorageService
-      final content = StorageService.generateMatchSheetText(playersData, statTypesData, teamName: teamName);
+      String fileName;
+      List<int> fileBytes;
+
+      if (exportFormat == 'excel') {
+        // Generate Excel file
+        fileBytes = StorageService.generateMatchSheetExcel(
+          playersData,
+          statTypesData,
+          teamName: teamName,
+        );
+        fileName = 'match_${match['name']}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      } else {
+        // Generate text file
+        final content = StorageService.generateMatchSheetText(
+          playersData,
+          statTypesData,
+          teamName: teamName,
+        );
+        fileBytes = content.codeUnits;
+        fileName = 'match_${match['name']}_${DateTime.now().millisecondsSinceEpoch}.txt';
+      }
 
       // Save to temp directory and share
-      final fileName = 'match_${match['name']}_${DateTime.now().millisecondsSinceEpoch}.txt';
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
-      await file.writeAsString(content);
+      await file.writeAsBytes(fileBytes);
 
       // Share the file
       // ignore: deprecated_member_use

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:excel/excel.dart';
 import '../models/match_entry.dart';
 import '../models/stat_type.dart';
 import '../models/training_entry.dart';
@@ -316,30 +317,8 @@ class StorageService {
   
   /// Get first half stat value for a player
   static int _getFirstHalfStatValue(Player player, String statKey) {
-    switch (statKey) {
-      case 'completedPasses':
-        return player.completedPasses;
-      case 'interceptions':
-        return player.interceptions;
-      case 'turnovers':
-        return player.turnovers;
-      case 'tackles':
-        return player.tackles;
-      case 'fouls':
-        return player.fouls;
-      case 'shotsOnTarget':
-        return player.shotsOnTarget;
-      case 'assists':
-        return player.assists;
-      case 'goals':
-        return player.goals;
-      case 'goalkeeperSaves':
-        return player.goalkeeperSaves;
-      case 'yellowCards':
-        return player.yellowCards;
-      default:
-        return player.customStats[statKey] ?? 0;
-    }
+    // First half stats are now stored in customStats map
+    return player.customStats[statKey] ?? 0;
   }
 
   /// Calculate first half total for a specific stat
@@ -347,40 +326,8 @@ class StorageService {
     int total = 0;
     
     for (final player in players) {
-      switch (statKey) {
-        case 'completedPasses':
-          total += player.completedPasses;
-          break;
-        case 'interceptions':
-          total += player.interceptions;
-          break;
-        case 'turnovers':
-          total += player.turnovers;
-          break;
-        case 'tackles':
-          total += player.tackles;
-          break;
-        case 'fouls':
-          total += player.fouls;
-          break;
-        case 'shotsOnTarget':
-          total += player.shotsOnTarget;
-          break;
-        case 'assists':
-          total += player.assists;
-          break;
-        case 'goals':
-          total += player.goals;
-          break;
-        case 'goalkeeperSaves':
-          total += player.goalkeeperSaves;
-          break;
-        case 'yellowCards':
-          total += player.yellowCards;
-          break;
-        default:
-          total += player.customStats[statKey] ?? 0;
-      }
+      // First half stats are now stored in customStats map
+      total += player.customStats[statKey] ?? 0;
     }
     
     return total;
@@ -1681,5 +1628,349 @@ class StorageService {
     }
 
     return buffer.toString();
+  }
+
+  // ==================== EXCEL EXPORT ====================
+
+  /// Generate match sheet as Excel file
+  static List<int> generateMatchSheetExcel(
+    List<Player> players,
+    List<StatType> statTypes, {
+    String teamName = 'Team A',
+  }) {
+    final excel = Excel.createExcel();
+    
+    // Collect all stat keys (default + custom)
+    final Set<String> allStatKeys = {};
+    for (final stat in statTypes) {
+      allStatKeys.add(stat.key);
+    }
+    for (final player in players) {
+      allStatKeys.addAll(player.customStats.keys);
+      allStatKeys.addAll(player.secondHalfStats.keys);
+    }
+
+    // Create Summary Sheet
+    final summarySheet = excel['Summary'];
+    summarySheet.appendRow([
+      TextCellValue('MATCH SHEET'),
+    ]);
+    summarySheet.appendRow([
+      TextCellValue('Team Name:'),
+      TextCellValue(teamName),
+    ]);
+    summarySheet.appendRow([
+      TextCellValue('Generated:'),
+      TextCellValue(DateTime.now().toString()),
+    ]);
+    summarySheet.appendRow([TextCellValue('')]);
+    
+    summarySheet.appendRow([TextCellValue('FULL MATCH SUMMARY')]);
+    summarySheet.appendRow([
+      TextCellValue('Total Players:'),
+      IntCellValue(players.length),
+    ]);
+    
+    for (final stat in statTypes) {
+      final firstHalfTotal = _calculateFirstHalfStatTotal(players, stat.key);
+      final secondHalfTotal = _calculateSecondHalfStatTotal(players, stat.key);
+      final fullMatchTotal = firstHalfTotal + secondHalfTotal;
+      summarySheet.appendRow([
+        TextCellValue('Total ${stat.label}:'),
+        IntCellValue(fullMatchTotal),
+        TextCellValue('(1st: $firstHalfTotal, 2nd: $secondHalfTotal)'),
+      ]);
+    }
+
+    // Create First Half Sheet
+    final firstHalfSheet = excel['First Half'];
+    final firstHalfHeaders = [
+      TextCellValue('ID'),
+      TextCellValue('Number'),
+      TextCellValue('Name'),
+      TextCellValue('Position'),
+    ];
+    for (final stat in statTypes) {
+      firstHalfHeaders.add(TextCellValue(stat.label));
+    }
+    firstHalfHeaders.add(TextCellValue('Rating'));
+    firstHalfHeaders.add(TextCellValue('Comments'));
+    firstHalfSheet.appendRow(firstHalfHeaders);
+
+    for (final player in players) {
+      final row = <CellValue>[
+        IntCellValue(player.id),
+        IntCellValue(player.number),
+        TextCellValue(player.name),
+        TextCellValue(player.position),
+      ];
+      for (final stat in statTypes) {
+        row.add(IntCellValue(_getFirstHalfStatValue(player, stat.key)));
+      }
+      row.add(IntCellValue(player.rating));
+      row.add(TextCellValue(player.comments));
+      firstHalfSheet.appendRow(row);
+    }
+
+    // Create Second Half Sheet
+    final secondHalfSheet = excel['Second Half'];
+    final secondHalfHeaders = [
+      TextCellValue('ID'),
+      TextCellValue('Number'),
+      TextCellValue('Name'),
+      TextCellValue('Position'),
+    ];
+    for (final stat in statTypes) {
+      secondHalfHeaders.add(TextCellValue(stat.label));
+    }
+    secondHalfHeaders.add(TextCellValue('Rating'));
+    secondHalfHeaders.add(TextCellValue('Comments'));
+    secondHalfSheet.appendRow(secondHalfHeaders);
+
+    for (final player in players) {
+      final row = <CellValue>[
+        IntCellValue(player.id),
+        IntCellValue(player.number),
+        TextCellValue(player.name),
+        TextCellValue(player.position),
+      ];
+      for (final stat in statTypes) {
+        row.add(IntCellValue(player.secondHalfStats[stat.key] ?? 0));
+      }
+      row.add(IntCellValue(player.rating));
+      row.add(TextCellValue(player.comments));
+      secondHalfSheet.appendRow(row);
+    }
+
+    // Create Full Match Sheet
+    final fullMatchSheet = excel['Full Match'];
+    final fullMatchHeaders = [
+      TextCellValue('ID'),
+      TextCellValue('Number'),
+      TextCellValue('Name'),
+      TextCellValue('Position'),
+    ];
+    for (final stat in statTypes) {
+      fullMatchHeaders.add(TextCellValue(stat.label));
+    }
+    fullMatchHeaders.add(TextCellValue('Rating'));
+    fullMatchHeaders.add(TextCellValue('Comments'));
+    fullMatchSheet.appendRow(fullMatchHeaders);
+
+    for (final player in players) {
+      final row = <CellValue>[
+        IntCellValue(player.id),
+        IntCellValue(player.number),
+        TextCellValue(player.name),
+        TextCellValue(player.position),
+      ];
+      for (final stat in statTypes) {
+        final firstHalfValue = _getFirstHalfStatValue(player, stat.key);
+        final secondHalfValue = player.secondHalfStats[stat.key] ?? 0;
+        row.add(IntCellValue(firstHalfValue + secondHalfValue));
+      }
+      row.add(IntCellValue(player.rating));
+      row.add(TextCellValue(player.comments));
+      fullMatchSheet.appendRow(row);
+    }
+
+    // Remove default Sheet1 before encoding
+    excel.delete('Sheet1');
+
+    return excel.encode()!;
+  }
+
+  /// Generate training data export as Excel file
+  static List<int> generateTrainingDataExcel({
+    required String playerName,
+    required int playerNumber,
+    required String position,
+    bool includeStrength = true,
+    bool includeTechnical = true,
+    List<Map<String, dynamic>>? strengthSessions,
+    List<Map<String, dynamic>>? technicalSessions,
+  }) {
+    final excel = Excel.createExcel();
+
+    // Create Summary Sheet
+    final summarySheet = excel['Summary'];
+    summarySheet.appendRow([TextCellValue('TRAINING DATA EXPORT')]);
+    summarySheet.appendRow([
+      TextCellValue('Player:'),
+      TextCellValue('$playerName (#$playerNumber)'),
+    ]);
+    summarySheet.appendRow([
+      TextCellValue('Position:'),
+      TextCellValue(position),
+    ]);
+    summarySheet.appendRow([
+      TextCellValue('Generated:'),
+      TextCellValue(DateTime.now().toString()),
+    ]);
+    summarySheet.appendRow([TextCellValue('')]);
+
+    if (includeStrength && strengthSessions != null) {
+      summarySheet.appendRow([
+        TextCellValue('Total Strength & Condition Sessions:'),
+        IntCellValue(strengthSessions.length),
+      ]);
+    }
+    if (includeTechnical && technicalSessions != null) {
+      summarySheet.appendRow([
+        TextCellValue('Total Technical Performance Sessions:'),
+        IntCellValue(technicalSessions.length),
+      ]);
+    }
+
+    // Strength & Condition Sheet
+    if (includeStrength && strengthSessions != null && strengthSessions.isNotEmpty) {
+      final strengthSheet = excel['Strength & Condition'];
+      strengthSheet.appendRow([
+        TextCellValue('Session'),
+        TextCellValue('Date'),
+        TextCellValue('Exercise'),
+        TextCellValue('Leg'),
+        TextCellValue('Set'),
+        TextCellValue('Reps'),
+        TextCellValue('Unit'),
+        TextCellValue('Notes'),
+      ]);
+
+      for (int i = 0; i < strengthSessions.length; i++) {
+        final session = strengthSessions[i];
+        final sessionName = session['name'] as String? ?? 'Session ${i + 1}';
+        final timestamp = session['timestamp'] as String? ?? '';
+        String dateStr = '';
+        if (timestamp.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(timestamp);
+            dateStr = '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+          } catch (e) {
+            dateStr = timestamp;
+          }
+        }
+
+        final structuredEntries = session['structuredEntries'] as List<dynamic>? ?? [];
+        for (final entryData in structuredEntries) {
+          final entry = entryData as Map<String, dynamic>;
+          final exercises = entry['exercises'] as List<dynamic>? ?? [];
+          final notes = entry['notes'] as String? ?? '';
+
+          for (final exerciseData in exercises) {
+            final exercise = exerciseData as Map<String, dynamic>;
+            final exerciseLabel = exercise['exerciseLabel'] as String? ?? 'Unknown';
+            final isPerLeg = exercise['isPerLeg'] as bool? ?? false;
+            final unit = exercise['unit'] as String? ?? 'reps';
+
+            if (isPerLeg) {
+              final legs = exercise['legs'] as Map<String, dynamic>? ?? {};
+              final leftSets = legs['left'] as List<dynamic>? ?? [];
+              final rightSets = legs['right'] as List<dynamic>? ?? [];
+
+              for (final setData in leftSets) {
+                final set = setData as Map<String, dynamic>;
+                strengthSheet.appendRow([
+                  TextCellValue(sessionName),
+                  TextCellValue(dateStr),
+                  TextCellValue(exerciseLabel),
+                  TextCellValue('Left'),
+                  IntCellValue(set['set'] as int),
+                  IntCellValue(set['reps'] as int),
+                  TextCellValue(unit),
+                  TextCellValue(notes),
+                ]);
+              }
+
+              for (final setData in rightSets) {
+                final set = setData as Map<String, dynamic>;
+                strengthSheet.appendRow([
+                  TextCellValue(sessionName),
+                  TextCellValue(dateStr),
+                  TextCellValue(exerciseLabel),
+                  TextCellValue('Right'),
+                  IntCellValue(set['set'] as int),
+                  IntCellValue(set['reps'] as int),
+                  TextCellValue(unit),
+                  TextCellValue(notes),
+                ]);
+              }
+            } else {
+              final sets = exercise['sets'] as List<dynamic>? ?? [];
+              for (final setData in sets) {
+                final set = setData as Map<String, dynamic>;
+                strengthSheet.appendRow([
+                  TextCellValue(sessionName),
+                  TextCellValue(dateStr),
+                  TextCellValue(exerciseLabel),
+                  TextCellValue('Both'),
+                  IntCellValue(set['set'] as int),
+                  IntCellValue(set['reps'] as int),
+                  TextCellValue(unit),
+                  TextCellValue(notes),
+                ]);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Technical Performance Sheet
+    if (includeTechnical && technicalSessions != null && technicalSessions.isNotEmpty) {
+      final technicalSheet = excel['Technical Performance'];
+      technicalSheet.appendRow([
+        TextCellValue('Session'),
+        TextCellValue('Date'),
+        TextCellValue('Skill'),
+        TextCellValue('Successful'),
+        TextCellValue('Neutral'),
+        TextCellValue('Failed'),
+        TextCellValue('Total Attempts'),
+        TextCellValue('Score'),
+        TextCellValue('Target Score'),
+        TextCellValue('Target Reps'),
+      ]);
+
+      for (int i = 0; i < technicalSessions.length; i++) {
+        final session = technicalSessions[i];
+        final sessionName = session['name'] as String? ?? 'Session ${i + 1}';
+        final timestamp = session['timestamp'] as String? ?? '';
+        String dateStr = '';
+        if (timestamp.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(timestamp);
+            dateStr = '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+          } catch (e) {
+            dateStr = timestamp;
+          }
+        }
+
+        final skillLabel = session['skillLabel'] as String? ?? 'Unknown Skill';
+        final successful = session['successful'] as int? ?? 0;
+        final neutral = session['neutral'] as int? ?? 0;
+        final fail = session['fail'] as int? ?? 0;
+        final currentScore = session['currentScore'] as double? ?? 0.0;
+        final targetScore = session['targetScore'] as double?;
+        final totalReps = session['totalReps'] as int?;
+
+        technicalSheet.appendRow([
+          TextCellValue(sessionName),
+          TextCellValue(dateStr),
+          TextCellValue(skillLabel),
+          IntCellValue(successful),
+          IntCellValue(neutral),
+          IntCellValue(fail),
+          IntCellValue(successful + neutral + fail),
+          DoubleCellValue(currentScore),
+          targetScore != null ? DoubleCellValue(targetScore) : TextCellValue('-'),
+          totalReps != null ? IntCellValue(totalReps) : TextCellValue('-'),
+        ]);
+      }
+    }
+
+    // Remove default Sheet1 before encoding
+    excel.delete('Sheet1');
+
+    return excel.encode()!;
   }
 }

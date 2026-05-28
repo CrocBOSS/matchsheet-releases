@@ -309,12 +309,68 @@ class _TrainingPlayerSelectionScreenState
       technicalSessions: technicalSessions,
     );
 
+    // Show format selection dialog
+    final exportFormat = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Format'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Select export format:'),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description, color: Colors.blue),
+              title: const Text('Text File (.txt)'),
+              onTap: () => Navigator.pop(context, 'txt'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Excel File (.xlsx)'),
+              onTap: () => Navigator.pop(context, 'excel'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (exportFormat == null) return;
+
     try {
+      String fileName;
+      List<int> fileBytes;
+
+      if (exportFormat == 'excel') {
+        // Generate Excel file
+        fileBytes = StorageService.generateTrainingDataExcel(
+          playerName: player.name,
+          playerNumber: player.number,
+          position: player.position,
+          includeStrength: includeStrength,
+          includeTechnical: includeTechnical,
+          strengthSessions: strengthSessions,
+          technicalSessions: technicalSessions,
+        );
+        fileName = 'training_${player.name.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      } else {
+        // Generate text file
+        fileBytes = content.codeUnits;
+        fileName = 'training_${player.name.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.txt';
+      }
+
       // Save to temp directory and share
-      final fileName = 'training_${player.name.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.txt';
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
-      await file.writeAsString(content);
+      await file.writeAsBytes(fileBytes);
 
       // Share the file
       // ignore: deprecated_member_use

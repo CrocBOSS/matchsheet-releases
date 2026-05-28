@@ -1002,7 +1002,7 @@ class _SoccerScreenState extends State<SoccerScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _exportToTxt();
+                _showExportFormatDialog();
               },
               child: const Text('Export', style: TextStyle(fontSize: 12, color: Colors.blue)),
             ),
@@ -1010,6 +1010,89 @@ class _SoccerScreenState extends State<SoccerScreen> {
         );
       },
     );
+  }
+
+  void _showExportFormatDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export Format', style: TextStyle(fontSize: 16)),
+        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select export format:',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.description, color: Colors.blue),
+              title: const Text('Text File (.txt)', style: TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.pop(context);
+                _exportToTxt();
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.table_chart, color: Colors.green),
+              title: const Text('Excel File (.xlsx)', style: TextStyle(fontSize: 13)),
+              onTap: () {
+                Navigator.pop(context);
+                _exportToExcel();
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportToExcel() async {
+    try {
+      // Generate Excel file
+      final excelBytes = StorageService.generateMatchSheetExcel(
+        players,
+        statTypes,
+        teamName: teamName,
+      );
+      
+      // Save to temp directory and share
+      final fileName = 'match_sheet_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(excelBytes);
+      
+      // Share the file
+      // ignore: deprecated_member_use
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Match Sheet Export',
+      );
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Match sheet exported to Excel successfully!'),
+          duration: Duration(milliseconds: 600),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: $e'),
+          duration: const Duration(milliseconds: 600),
+        ),
+      );
+    }
   }
 
   @override
