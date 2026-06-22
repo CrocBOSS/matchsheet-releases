@@ -1,11 +1,108 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../sports/soccer/screens/soccer_screen.dart';
 import '../../sports/basketball/screens/basketball_screen.dart';
 import '../../training/screens/training_player_selection_screen.dart';
+import '../../../services/update_service.dart';
+import '../../../widgets/update_dialog.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Check for updates when app starts
+    _checkForUpdates();
+  }
+
+  Future<void> _checkForUpdates() async {
+    // Wait a bit for the UI to settle
+    await Future.delayed(const Duration(seconds: 2));
+    
+    final updateInfo = await UpdateService.checkForUpdate();
+    if (updateInfo != null && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => UpdateDialog(updateInfo: updateInfo),
+      );
+    }
+  }
+
+  Future<void> _manualUpdateCheck() async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Checking for updates...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final updateInfo = await UpdateService.checkForUpdate(forceCheck: true);
+    
+    if (mounted) {
+      Navigator.pop(context); // Close loading dialog
+      
+      if (updateInfo != null) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => UpdateDialog(updateInfo: updateInfo),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You\'re using the latest version!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showAboutDialog() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    
+    if (mounted) {
+      showAboutDialog(
+        context: context,
+        applicationName: 'Pep Match Sheet',
+        applicationVersion: 'Version ${packageInfo.version} (${packageInfo.buildNumber})',
+        applicationIcon: const Icon(Icons.sports, size: 48),
+        children: [
+          const SizedBox(height: 16),
+          const Text('A comprehensive app for tracking match sheets and training sessions.'),
+          const SizedBox(height: 16),
+          const Text('Features:'),
+          const Text('• Soccer & Basketball match tracking'),
+          const Text('• Training mode for technical & strength'),
+          const Text('• Speed training with timer'),
+          const Text('• Export data to Excel/Text'),
+          const Text('• Auto-update via GitHub'),
+        ],
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +206,40 @@ class HomeScreen extends StatelessWidget {
         title: const Text("Pep Match Sheet"),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'check_update') {
+                _manualUpdateCheck();
+              } else if (value == 'about') {
+                _showAboutDialog();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'check_update',
+                child: Row(
+                  children: [
+                    Icon(Icons.system_update),
+                    SizedBox(width: 12),
+                    Text('Check for Updates'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'about',
+                child: Row(
+                  children: [
+                    Icon(Icons.info),
+                    SizedBox(width: 12),
+                    Text('About'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(
