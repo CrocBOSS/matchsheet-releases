@@ -1246,4 +1246,133 @@ class StorageService {
       return [];
     }
   }
+
+  // ==================== SPEED TRAINING SESSION MANAGEMENT ====================
+
+  /// Save speed training session with attempts and statistics
+  static Future<void> saveSpeedTrainingSession({
+    required String playerName,
+    required String playerId,
+    required double targetTime,
+    required String targetTimeUnit,
+    required double distance,
+    required String distanceUnit,
+    required List<Map<String, dynamic>> attempts,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final sessionId = DateTime.now().microsecondsSinceEpoch.toString();
+      
+      // Calculate statistics from attempts
+      final times = attempts
+          .map((a) => a['timeInMilliseconds'] as int)
+          .toList();
+      
+      final bestTime = times.isEmpty ? 0 : times.reduce((a, b) => a < b ? a : b);
+      final avgTime = times.isEmpty ? 0.0 : times.reduce((a, b) => a + b) / times.length;
+      
+      final metTargetCount = attempts
+          .where((a) => a['metTarget'] as bool)
+          .length;
+      final successRate = attempts.isEmpty ? 0.0 : (metTargetCount / attempts.length);
+      
+      // Create session data
+      final sessionData = {
+        'sessionId': sessionId,
+        'playerName': playerName,
+        'playerId': playerId,
+        'date': DateTime.now().toIso8601String(),
+        'type': 'speed_training',
+        'targetTime': targetTime,
+        'targetTimeUnit': targetTimeUnit,
+        'distance': distance,
+        'distanceUnit': distanceUnit,
+        'attempts': attempts,
+        'totalAttempts': attempts.length,
+        'bestTime': bestTime,
+        'averageTime': avgTime,
+        'successRate': successRate,
+      };
+      
+      // Get existing sessions
+      final savedSessionsJson = prefs.getString('saved_speed_training_sessions') ?? '[]';
+      final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
+      
+      // Add new session
+      savedSessions.add(sessionData);
+      
+      // Save back to storage
+      await prefs.setString('saved_speed_training_sessions', jsonEncode(savedSessions));
+    } catch (e) {
+      // Error saving speed training session silently
+      rethrow; // Re-throw to allow UI to handle errors
+    }
+  }
+
+  /// Load saved speed training sessions, optionally filtered by playerId
+  static Future<List<Map<String, dynamic>>> loadSpeedTrainingSessions({
+    String? playerId,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSessionsJson = prefs.getString('saved_speed_training_sessions') ?? '[]';
+      final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
+      
+      List<Map<String, dynamic>> sessions = savedSessions.cast<Map<String, dynamic>>();
+      
+      // Filter by playerId if provided
+      if (playerId != null) {
+        sessions = sessions
+            .where((session) => session['playerId'] == playerId)
+            .toList();
+      }
+      
+      // Sort by date, newest first
+      sessions.sort((a, b) {
+        final dateA = DateTime.parse(a['date'] as String);
+        final dateB = DateTime.parse(b['date'] as String);
+        return dateB.compareTo(dateA);
+      });
+      
+      return sessions;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Delete a speed training session by sessionId
+  static Future<void> deleteSpeedTrainingSession(String sessionId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedSessionsJson = prefs.getString('saved_speed_training_sessions') ?? '[]';
+      final List<dynamic> savedSessions = jsonDecode(savedSessionsJson);
+      
+      // Remove session with matching sessionId
+      savedSessions.removeWhere((session) {
+        return (session as Map<String, dynamic>)['sessionId'] == sessionId;
+      });
+      
+      // Save back
+      await prefs.setString('saved_speed_training_sessions', jsonEncode(savedSessions));
+    } catch (e) {
+      // Error deleting speed training session silently
+    }
+  }
+
+  /// Get a specific speed training session by sessionId
+  static Future<Map<String, dynamic>?> getSpeedTrainingSession(String sessionId) async {
+    try {
+      final sessions = await loadSpeedTrainingSessions();
+      
+      for (final session in sessions) {
+        if (session['sessionId'] == sessionId) {
+          return session;
+        }
+      }
+      
+      return null; // Not found
+    } catch (e) {
+      return null;
+    }
+  }
 }

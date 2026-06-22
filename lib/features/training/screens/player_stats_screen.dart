@@ -40,10 +40,14 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
     final technicalSessions = await StorageService.loadSavedTechnicalTrainingSessions(
       playerId: widget.player.id,
     );
+    final speedSessions = await StorageService.loadSpeedTrainingSessions(
+      playerId: widget.player.id,
+    );
 
     return {
       'strengthSessions': strengthSessions,
       'technicalSessions': technicalSessions,
+      'speedSessions': speedSessions,
     };
   }
 
@@ -140,8 +144,9 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
 
         final data = snapshot.data ?? {};
         final technicalSessions = data['technicalSessions'] ?? [];
+        final speedSessions = data['speedSessions'] ?? [];
 
-        if (technicalSessions.isEmpty) {
+        if (technicalSessions.isEmpty && speedSessions.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -167,7 +172,7 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
           );
         }
 
-        final skillCounts = _countSavedTechnicalSkills(technicalSessions);
+        final skillCounts = _countSavedTechnicalSkills(technicalSessions, speedSessions);
 
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -205,15 +210,22 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen>
     return counts;
   }
 
-  Map<String, int> _countSavedTechnicalSkills(List<Map<String, dynamic>> sessions) {
+  Map<String, int> _countSavedTechnicalSkills(
+    List<Map<String, dynamic>> sessions,
+    List<Map<String, dynamic>> speedSessions,
+  ) {
     final counts = <String, int>{};
 
+    // Count regular technical sessions
     for (final session in sessions) {
       final skillLabel = session['skillLabel'] as String? ?? session['name'] as String? ?? '';
       final normalized = skillLabel.trim();
       if (normalized.isEmpty) continue;
       counts[normalized] = (counts[normalized] ?? 0) + 1;
     }
+
+    // Count speed sessions
+    counts['Speed'] = (counts['Speed'] ?? 0) + speedSessions.length;
 
     return counts;
   }

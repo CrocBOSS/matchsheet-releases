@@ -14,6 +14,7 @@ class TrainingExportHelper {
     bool includeTechnical = true,
     List<Map<String, dynamic>>? strengthSessions,
     List<Map<String, dynamic>>? technicalSessions,
+    List<Map<String, dynamic>>? speedSessions,
   }) {
     final buffer = StringBuffer();
 
@@ -164,18 +165,88 @@ class TrainingExportHelper {
       }
     }
 
+    // Speed Training Section
+    if (includeTechnical &&
+        speedSessions != null &&
+        speedSessions.isNotEmpty) {
+      buffer.writeln('=== SPEED TRAINING SESSIONS ===');
+      buffer.writeln('Total Sessions: ${speedSessions.length}');
+      buffer.writeln('');
+
+      for (int i = 0; i < speedSessions.length; i++) {
+        final session = speedSessions[i];
+        final date = session['date'] as String? ?? '';
+        final targetTime = session['targetTime'] as double? ?? 0.0;
+        final targetTimeUnit = session['targetTimeUnit'] as String? ?? 'seconds';
+        final distance = session['distance'] as double? ?? 0.0;
+        final distanceUnit = session['distanceUnit'] as String? ?? 'meters';
+        final bestTime = session['bestTime'] as int? ?? 0;
+        final averageTime = session['averageTime'] as double? ?? 0.0;
+        final successRate = session['successRate'] as double? ?? 0.0;
+        final attempts = session['attempts'] as List? ?? [];
+
+        buffer.writeln('--- Session ${i + 1}: Speed Training ---');
+        if (date.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(date);
+            buffer.writeln(
+                'Date: ${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}');
+          } catch (e) {
+            buffer.writeln('Date: $date');
+          }
+        }
+        buffer.writeln('');
+
+        buffer.writeln('Configuration:');
+        buffer.writeln('  Target Time: $targetTime $targetTimeUnit');
+        buffer.writeln('  Distance: $distance $distanceUnit');
+        buffer.writeln('');
+
+        buffer.writeln('Statistics:');
+        buffer.writeln('  Total Attempts: ${attempts.length}');
+        buffer.writeln('  Best Time: ${_formatTimeFromMillis(bestTime)}');
+        buffer.writeln('  Average Time: ${_formatTimeFromMillis(averageTime.round())}');
+        buffer.writeln('  Success Rate: ${successRate.toStringAsFixed(1)}%');
+        buffer.writeln('');
+
+        buffer.writeln('Attempts:');
+        for (final attempt in attempts) {
+          final attemptNumber = attempt['attemptNumber'] as int? ?? 0;
+          final timeInMs = attempt['timeInMilliseconds'] as int? ?? 0;
+          final metTarget = attempt['metTarget'] as bool? ?? false;
+          final icon = metTarget ? '✓' : '✗';
+          buffer.writeln('  $icon Attempt #$attemptNumber: ${_formatTimeFromMillis(timeInMs)}');
+        }
+        buffer.writeln('');
+      }
+    }
+
     // Summary
     buffer.writeln('=== SUMMARY ===');
     if (includeStrength && strengthSessions != null) {
       buffer.writeln(
           'Total Strength & Condition Sessions: ${strengthSessions.length}');
     }
-    if (includeTechnical && technicalSessions != null) {
-      buffer.writeln(
-          'Total Technical Performance Sessions: ${technicalSessions.length}');
+    if (includeTechnical) {
+      if (technicalSessions != null) {
+        buffer.writeln(
+            'Total Technical Performance Sessions: ${technicalSessions.length}');
+      }
+      if (speedSessions != null) {
+        buffer.writeln(
+            'Total Speed Training Sessions: ${speedSessions.length}');
+      }
     }
 
     return buffer.toString();
+  }
+
+  /// Helper to format time from milliseconds to MM:SS.mmm
+  static String _formatTimeFromMillis(int milliseconds) {
+    final minutes = (milliseconds ~/ 60000).toString().padLeft(2, '0');
+    final seconds = ((milliseconds % 60000) ~/ 1000).toString().padLeft(2, '0');
+    final millis = (milliseconds % 1000).toString().padLeft(3, '0');
+    return '$minutes:$seconds.$millis';
   }
 
   /// Generate training data export as Excel file
@@ -187,6 +258,7 @@ class TrainingExportHelper {
     bool includeTechnical = true,
     List<Map<String, dynamic>>? strengthSessions,
     List<Map<String, dynamic>>? technicalSessions,
+    List<Map<String, dynamic>>? speedSessions,
   }) {
     final excel = Excel.createExcel();
 
@@ -213,11 +285,19 @@ class TrainingExportHelper {
         IntCellValue(strengthSessions.length),
       ]);
     }
-    if (includeTechnical && technicalSessions != null) {
-      summarySheet.appendRow([
-        TextCellValue('Total Technical Performance Sessions:'),
-        IntCellValue(technicalSessions.length),
-      ]);
+    if (includeTechnical) {
+      if (technicalSessions != null) {
+        summarySheet.appendRow([
+          TextCellValue('Total Technical Performance Sessions:'),
+          IntCellValue(technicalSessions.length),
+        ]);
+      }
+      if (speedSessions != null) {
+        summarySheet.appendRow([
+          TextCellValue('Total Speed Training Sessions:'),
+          IntCellValue(speedSessions.length),
+        ]);
+      }
     }
 
     // Strength & Condition Sheet
@@ -373,6 +453,102 @@ class TrainingExportHelper {
               : TextCellValue('-'),
           totalReps != null ? IntCellValue(totalReps) : TextCellValue('-'),
         ]);
+      }
+    }
+
+    // Speed Training Sheet
+    if (includeTechnical &&
+        speedSessions != null &&
+        speedSessions.isNotEmpty) {
+      final speedSheet = excel['Speed Training'];
+      speedSheet.appendRow([
+        TextCellValue('Session'),
+        TextCellValue('Date'),
+        TextCellValue('Target Time'),
+        TextCellValue('Time Unit'),
+        TextCellValue('Distance'),
+        TextCellValue('Distance Unit'),
+        TextCellValue('Total Attempts'),
+        TextCellValue('Best Time'),
+        TextCellValue('Average Time'),
+        TextCellValue('Success Rate (%)'),
+      ]);
+
+      for (int i = 0; i < speedSessions.length; i++) {
+        final session = speedSessions[i];
+        final date = session['date'] as String? ?? '';
+        String dateStr = '';
+        if (date.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(date);
+            dateStr =
+                '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+          } catch (e) {
+            dateStr = date;
+          }
+        }
+
+        final targetTime = session['targetTime'] as double? ?? 0.0;
+        final targetTimeUnit = session['targetTimeUnit'] as String? ?? 'seconds';
+        final distance = session['distance'] as double? ?? 0.0;
+        final distanceUnit = session['distanceUnit'] as String? ?? 'meters';
+        final bestTime = session['bestTime'] as int? ?? 0;
+        final averageTime = session['averageTime'] as double? ?? 0.0;
+        final successRate = session['successRate'] as double? ?? 0.0;
+        final attempts = session['attempts'] as List? ?? [];
+
+        speedSheet.appendRow([
+          TextCellValue('Speed Training ${i + 1}'),
+          TextCellValue(dateStr),
+          DoubleCellValue(targetTime),
+          TextCellValue(targetTimeUnit),
+          DoubleCellValue(distance),
+          TextCellValue(distanceUnit),
+          IntCellValue(attempts.length),
+          TextCellValue(_formatTimeFromMillis(bestTime)),
+          TextCellValue(_formatTimeFromMillis(averageTime.round())),
+          DoubleCellValue(successRate),
+        ]);
+      }
+
+      // Add detailed attempts sheet
+      final attemptsSheet = excel['Speed Training - Attempts'];
+      attemptsSheet.appendRow([
+        TextCellValue('Session'),
+        TextCellValue('Date'),
+        TextCellValue('Attempt #'),
+        TextCellValue('Time'),
+        TextCellValue('Met Target'),
+      ]);
+
+      for (int i = 0; i < speedSessions.length; i++) {
+        final session = speedSessions[i];
+        final date = session['date'] as String? ?? '';
+        String dateStr = '';
+        if (date.isNotEmpty) {
+          try {
+            final dateTime = DateTime.parse(date);
+            dateStr =
+                '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+          } catch (e) {
+            dateStr = date;
+          }
+        }
+
+        final attempts = session['attempts'] as List? ?? [];
+        for (final attempt in attempts) {
+          final attemptNumber = attempt['attemptNumber'] as int? ?? 0;
+          final timeInMs = attempt['timeInMilliseconds'] as int? ?? 0;
+          final metTarget = attempt['metTarget'] as bool? ?? false;
+
+          attemptsSheet.appendRow([
+            TextCellValue('Speed Training ${i + 1}'),
+            TextCellValue(dateStr),
+            IntCellValue(attemptNumber),
+            TextCellValue(_formatTimeFromMillis(timeInMs)),
+            TextCellValue(metTarget ? 'Yes' : 'No'),
+          ]);
+        }
       }
     }
 

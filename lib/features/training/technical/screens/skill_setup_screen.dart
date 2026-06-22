@@ -5,6 +5,8 @@ import '../../../../services/storage_service.dart';
 import 'technical_screen.dart';
 import 'technical_settings_screen.dart';
 import 'saved_sessions_screen.dart';
+import '../widgets/speed_config_dialog.dart';
+import 'speed_training_screen.dart';
 
 class TechnicalSetupScreen extends StatefulWidget {
   final TrainingPlayer player;
@@ -26,6 +28,12 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
   String selectedUnit = 'reps';
   bool hasConfiguredTargets = false;
   bool isLoading = true;
+
+  // Speed-specific configuration
+  double? speedTargetTime;
+  String? speedTimeUnit;
+  double? speedDistance;
+  String? speedDistanceUnit;
 
   @override
   void initState() {
@@ -73,7 +81,13 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
       selectedUnit = skill.unit;
       hasConfiguredTargets = false;
     });
-    _showSkillConfigDialog(skill);
+    
+    // Check if this is the Speed skill
+    if (skill.key == 'speed') {
+      _showSpeedConfigDialog();
+    } else {
+      _showSkillConfigDialog(skill);
+    }
   }
 
   void _showSkillConfigDialog(TechnicalSkill skill) {
@@ -176,20 +190,65 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
     );
   }
 
+  Future<void> _showSpeedConfigDialog() async {
+    final config = await showSpeedConfigDialog(context);
+    
+    if (config != null) {
+      setState(() {
+        speedTargetTime = config.targetTime;
+        speedTimeUnit = config.targetTimeUnit;
+        speedDistance = config.distance;
+        speedDistanceUnit = config.distanceUnit;
+        hasConfiguredTargets = true;
+      });
+    }
+  }
+
+  String _getSkillConfigText(TechnicalSkill skill, bool isSelected) {
+    if (skill.key == 'speed' && isSelected && hasConfiguredTargets) {
+      // Show Speed-specific configuration
+      return 'Target: $speedTargetTime $speedTimeUnit • $speedDistance $speedDistanceUnit';
+    } else if (isSelected && hasConfiguredTargets) {
+      // Show regular skill configuration
+      return 'Target Score $selectedTargetScore • $selectedTotalReps $selectedUnit';
+    } else {
+      // Show default skill configuration
+      return 'Target Score ${skill.targetScore} • ${skill.totalReps} ${skill.unit}';
+    }
+  }
+
   void _startTraining() {
     if (selectedSkill == null || !hasConfiguredTargets) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TechnicalPerformanceScreen(
-          selectedStat: selectedSkill!.toStatType(),
-          targetScore: selectedTargetScore,
-          totalReps: selectedTotalReps,
-          player: widget.player,
+    // Check if this is the Speed skill
+    if (selectedSkill!.key == 'speed') {
+      // Navigate to SpeedTrainingScreen with Speed-specific config
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SpeedTrainingScreen(
+            targetTime: speedTargetTime!,
+            targetTimeUnit: speedTimeUnit!,
+            distance: speedDistance!,
+            distanceUnit: speedDistanceUnit!,
+            player: widget.player,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      // Navigate to regular technical performance screen for other skills
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TechnicalPerformanceScreen(
+            selectedStat: selectedSkill!.toStatType(),
+            targetScore: selectedTargetScore,
+            totalReps: selectedTotalReps,
+            player: widget.player,
+          ),
+        ),
+      );
+    }
   }
 
   void _openSettings() async {
@@ -348,9 +407,7 @@ class _TechnicalSetupScreenState extends State<TechnicalSetupScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            isSelected && hasConfiguredTargets
-                                                ? 'Target Score $selectedTargetScore • $selectedTotalReps $selectedUnit'
-                                                : 'Target Score ${skill.targetScore} • ${skill.totalReps} ${skill.unit}',
+                                            _getSkillConfigText(skill, isSelected),
                                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                                   color: Colors.grey[700],
                                                 ),

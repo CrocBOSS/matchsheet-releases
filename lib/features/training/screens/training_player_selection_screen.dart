@@ -270,6 +270,7 @@ class _TrainingPlayerSelectionScreenState
 
     List<Map<String, dynamic>>? strengthSessions;
     List<Map<String, dynamic>>? technicalSessions;
+    List<Map<String, dynamic>>? speedSessions;
 
     if (includeStrength) {
       strengthSessions = await StorageService.loadSavedStrengthTrainingSessions(
@@ -281,13 +282,17 @@ class _TrainingPlayerSelectionScreenState
       technicalSessions = await StorageService.loadSavedTechnicalTrainingSessions(
         playerId: player.id,
       );
+      speedSessions = await StorageService.loadSpeedTrainingSessions(
+        playerId: player.id,
+      );
     }
 
     // Check if there's any data to export
     final hasStrengthData = strengthSessions != null && strengthSessions.isNotEmpty;
     final hasTechnicalData = technicalSessions != null && technicalSessions.isNotEmpty;
+    final hasSpeedData = speedSessions != null && speedSessions.isNotEmpty;
 
-    if (!hasStrengthData && !hasTechnicalData) {
+    if (!hasStrengthData && !hasTechnicalData && !hasSpeedData) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -349,6 +354,7 @@ class _TrainingPlayerSelectionScreenState
           includeTechnical: includeTechnical,
           strengthSessions: strengthSessions,
           technicalSessions: technicalSessions,
+          speedSessions: speedSessions,
         );
 
         await exportService.exportAndShare(
@@ -367,6 +373,7 @@ class _TrainingPlayerSelectionScreenState
           includeTechnical: includeTechnical,
           strengthSessions: strengthSessions,
           technicalSessions: technicalSessions,
+          speedSessions: speedSessions,
         );
 
         await exportService.exportAndShare(
