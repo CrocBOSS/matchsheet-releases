@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../core/models/stat_type.dart';
-import '../../models/match_entry.dart';
-import '../../services/storage_service.dart';
+import '../../../../core/models/stat_type.dart';
+import '../../../../models/match_entry.dart';
+import '../../../../services/storage_service.dart';
+import '../basketball_config.dart';
 
-class SettingsScreen extends StatefulWidget {
+class BasketballSettingsScreen extends StatefulWidget {
   final List<StatType> statTypes;
   final List<StatType> positions;
   final List<Player> players;
   final Function(List<StatType>) onStatTypesSaved;
   final Function(List<StatType>) onPositionsSaved;
 
-  const SettingsScreen({
+  const BasketballSettingsScreen({
     Key? key,
     required this.statTypes,
     required this.positions,
@@ -20,10 +21,10 @@ class SettingsScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State<BasketballSettingsScreen> createState() => _BasketballSettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
+class _BasketballSettingsScreenState extends State<BasketballSettingsScreen> with TickerProviderStateMixin {
   late List<StatType> statTypes;
   late List<StatType> positions;
   late TabController _tabController;
@@ -46,8 +47,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   bool _isStatTypeUsed(String statKey) {
-    // Generic engine - check only custom stats (no hardcoded sport-specific logic)
+    // Check if any player has a non-zero value for this stat
     for (final player in widget.players) {
+      // Check custom stats for basketball
       if ((player.customStats[statKey] ?? 0) != 0) return true;
       if ((player.secondHalfStats[statKey] ?? 0) != 0) return true;
     }
@@ -231,7 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       builder: (context) {
         return AlertDialog(
           title: const Text('Reset to Defaults'),
-          content: const Text('This will restore the default stat types.'),
+          content: const Text('This will restore the default basketball stat types.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -240,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             TextButton(
               onPressed: () {
                 setState(() {
-                  statTypes = StorageService.getDefaultStatTypes();
+                  statTypes = BasketballConfig.getDefaultStatTypes();
                 });
                 Navigator.pop(context);
               },
@@ -268,7 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                 TextField(
                   controller: keyController,
                   decoration: const InputDecoration(
-                    labelText: 'Key (e.g., GK)',
+                    labelText: 'Key (e.g., PG)',
                     border: OutlineInputBorder(),
                     hintText: 'Internal identifier, no spaces',
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -278,7 +280,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                 TextField(
                   controller: labelController,
                   decoration: const InputDecoration(
-                    labelText: 'Display Label (e.g., Goalkeeper)',
+                    labelText: 'Display Label (e.g., Point Guard)',
                     border: OutlineInputBorder(),
                     hintText: 'What users see in the UI',
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -424,7 +426,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       builder: (context) {
         return AlertDialog(
           title: const Text('Reset to Defaults'),
-          content: const Text('This will restore the default positions.'),
+          content: const Text('This will restore the default basketball positions.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -433,7 +435,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             TextButton(
               onPressed: () {
                 setState(() {
-                  positions = StorageService.getDefaultPositions();
+                  positions = BasketballConfig.getDefaultPositions();
                 });
                 Navigator.pop(context);
               },
@@ -460,7 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: appBarHeight,
-        title: const Text('Settings'),
+        title: const Text('Basketball Settings'),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -494,7 +496,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Manage Stat Types',
+                  'Basketball Stat Types',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -551,7 +553,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
-                  'Manage Positions',
+                  'Basketball Positions',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
@@ -602,7 +604,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           icon: const Icon(Icons.add),
           label: Text(_tabController.index == 0 ? 'Add Stat Type' : 'Add Position'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
           ),
         ),

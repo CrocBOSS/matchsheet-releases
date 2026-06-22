@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../core/models/stat_type.dart';
-import '../../models/match_entry.dart';
-import '../../services/storage_service.dart';
+import '../../../../core/models/stat_type.dart';
+import '../../../../models/match_entry.dart';
+import '../../../../services/storage_service.dart';
+import '../soccer_config.dart';
 
 class SettingsScreen extends StatefulWidget {
   final List<StatType> statTypes;
@@ -45,17 +46,51 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     super.dispose();
   }
 
+  /// Soccer-specific stat checking including hardcoded fields
   bool _isStatTypeUsed(String statKey) {
-    // Generic engine - check only custom stats (no hardcoded sport-specific logic)
     for (final player in widget.players) {
-      if ((player.customStats[statKey] ?? 0) != 0) return true;
-      if ((player.secondHalfStats[statKey] ?? 0) != 0) return true;
+      // Check hardcoded soccer stats
+      switch (statKey) {
+        case 'completedPasses':
+          if (player.completedPasses != 0) return true;
+          break;
+        case 'interceptions':
+          if (player.interceptions != 0) return true;
+          break;
+        case 'turnovers':
+          if (player.turnovers != 0) return true;
+          break;
+        case 'tackles':
+          if (player.tackles != 0) return true;
+          break;
+        case 'fouls':
+          if (player.fouls != 0) return true;
+          break;
+        case 'shotsOnTarget':
+          if (player.shotsOnTarget != 0) return true;
+          break;
+        case 'assists':
+          if (player.assists != 0) return true;
+          break;
+        case 'goals':
+          if (player.goals != 0) return true;
+          break;
+        case 'goalkeeperSaves':
+          if (player.goalkeeperSaves != 0) return true;
+          break;
+        case 'yellowCards':
+          if (player.yellowCards != 0) return true;
+          break;
+        default:
+          // Check custom stats
+          if ((player.customStats[statKey] ?? 0) != 0) return true;
+          if ((player.secondHalfStats[statKey] ?? 0) != 0) return true;
+      }
     }
     return false;
   }
 
   bool _isPositionUsed(String positionKey) {
-    // Check if any player has this position assigned
     return widget.players.any((player) => player.position == positionKey);
   }
 
@@ -108,7 +143,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                       label: labelController.text,
                     ));
                   });
-                  // Auto-save on add
                   _saveStatTypesAndPositions();
                   Navigator.pop(context);
                 }
@@ -166,7 +200,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                   setState(() {
                     statTypes[index] = stat.copyWith(label: labelController.text);
                   });
-                  // Auto-save on edit
                   _saveStatTypesAndPositions();
                   Navigator.pop(context);
                 }
@@ -213,7 +246,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                   setState(() {
                     statTypes.removeAt(index);
                   });
-                  // Auto-save on remove
                   _saveStatTypesAndPositions();
                   Navigator.pop(context);
                 },
@@ -240,7 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             TextButton(
               onPressed: () {
                 setState(() {
-                  statTypes = StorageService.getDefaultStatTypes();
+                  statTypes = SoccerConfig.getDefaultStatTypes();
                 });
                 Navigator.pop(context);
               },
@@ -301,7 +333,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                       label: labelController.text,
                     ));
                   });
-                  // Auto-save on add
                   _saveStatTypesAndPositions();
                   Navigator.pop(context);
                 }
@@ -359,7 +390,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                   setState(() {
                     positions[index] = position.copyWith(label: labelController.text);
                   });
-                  // Auto-save on edit
                   _saveStatTypesAndPositions();
                   Navigator.pop(context);
                 }
@@ -406,7 +436,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                   setState(() {
                     positions.removeAt(index);
                   });
-                  // Auto-save on remove
                   _saveStatTypesAndPositions();
                   Navigator.pop(context);
                 },
@@ -433,7 +462,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
             TextButton(
               onPressed: () {
                 setState(() {
-                  positions = StorageService.getDefaultPositions();
+                  positions = SoccerConfig.getDefaultPositions();
                 });
                 Navigator.pop(context);
               },
@@ -476,7 +505,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           // Stat Types Tab
           Column(
             children: [
-              // Reset Button - only show in portrait mode
               if (!isLandscape)
                 Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -490,7 +518,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     ),
                   ),
                 ),
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
@@ -500,7 +527,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               ),
               const SizedBox(height: 16),
               const Divider(),
-              // Stat Types List
               Expanded(
                 child: ListView.builder(
                   itemCount: statTypes.length,
@@ -533,7 +559,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
           // Positions Tab
           Column(
             children: [
-              // Reset Button - only show in portrait mode
               if (!isLandscape)
                 Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -547,7 +572,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     ),
                   ),
                 ),
-              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Text(
@@ -557,7 +581,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               ),
               const SizedBox(height: 16),
               const Divider(),
-              // Positions List
               Expanded(
                 child: ListView.builder(
                   itemCount: positions.length,

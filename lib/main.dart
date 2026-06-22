@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'screens/shared/home_screen.dart';
-import 'screens/training/training_screen.dart';
-import 'models/training_player.dart';
+import 'features/home/screens/home_screen.dart';
+import 'features/training/screens/training_screen.dart';
+import 'features/training/models/training_player.dart';
 
 void main() {
   runApp(const MatchSheetApp());
