@@ -116,108 +116,132 @@ class TrainingExportHelper {
 
     // Technical Performance Section
     if (includeTechnical &&
-        technicalSessions != null &&
-        technicalSessions.isNotEmpty) {
+        (technicalSessions != null && technicalSessions.isNotEmpty ||
+         speedSessions != null && speedSessions.isNotEmpty)) {
       buffer.writeln('=== TECHNICAL PERFORMANCE SESSIONS ===');
-      buffer.writeln('Total Sessions: ${technicalSessions.length}');
+      
+      // Count total sessions
+      final totalTechnicalSessions = (technicalSessions?.length ?? 0) + (speedSessions?.length ?? 0);
+      buffer.writeln('Total Sessions: $totalTechnicalSessions');
       buffer.writeln('');
 
-      for (int i = 0; i < technicalSessions.length; i++) {
-        final session = technicalSessions[i];
-        final sessionName = session['name'] as String? ?? 'Session ${i + 1}';
-        final timestamp = session['timestamp'] as String? ?? '';
-        final skillLabel = session['skillLabel'] as String? ?? 'Unknown Skill';
-        final successful = session['successful'] as int? ?? 0;
-        final neutral = session['neutral'] as int? ?? 0;
-        final fail = session['fail'] as int? ?? 0;
-        final currentScore = session['currentScore'] as double? ?? 0.0;
-        final targetScore = session['targetScore'] as double?;
-        final totalReps = session['totalReps'] as int?;
-
-        buffer.writeln('--- Session ${i + 1}: $sessionName ---');
-        if (timestamp.isNotEmpty) {
-          try {
-            final dateTime = DateTime.parse(timestamp);
-            buffer.writeln(
-                'Date: ${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}');
-          } catch (e) {
-            buffer.writeln('Date: $timestamp');
-          }
+      // Combine and sort all sessions by date
+      final allTechnicalSessions = <Map<String, dynamic>>[];
+      
+      // Add regular technical sessions with type marker
+      if (technicalSessions != null) {
+        for (var session in technicalSessions) {
+          allTechnicalSessions.add({...session, '_isSpeedSession': false});
         }
-        buffer.writeln('Skill: $skillLabel');
-        buffer.writeln('');
-
-        buffer.writeln('Performance:');
-        buffer.writeln('  ✓ Successful: $successful');
-        buffer.writeln('  ⊙ Neutral: $neutral');
-        buffer.writeln('  ✗ Failed: $fail');
-        buffer.writeln('  Total Attempts: ${successful + neutral + fail}');
-        buffer.writeln('');
-
-        buffer.writeln('Score: ${currentScore.toStringAsFixed(1)}/10');
-        if (targetScore != null) {
-          buffer.writeln('Target Score: ${targetScore.toStringAsFixed(1)}/10');
-        }
-        if (totalReps != null) {
-          buffer.writeln('Target Reps: $totalReps');
-        }
-        buffer.writeln('');
       }
-    }
+      
+      // Add speed sessions with type marker
+      if (speedSessions != null) {
+        for (var session in speedSessions) {
+          allTechnicalSessions.add({...session, '_isSpeedSession': true});
+        }
+      }
+      
+      // Sort by date (newest first)
+      allTechnicalSessions.sort((a, b) {
+        final aDate = DateTime.tryParse(a['date'] as String? ?? a['timestamp'] as String? ?? '');
+        final bDate = DateTime.tryParse(b['date'] as String? ?? b['timestamp'] as String? ?? '');
+        if (aDate == null || bDate == null) return 0;
+        return bDate.compareTo(aDate);
+      });
 
-    // Speed Training Section
-    if (includeTechnical &&
-        speedSessions != null &&
-        speedSessions.isNotEmpty) {
-      buffer.writeln('=== SPEED TRAINING SESSIONS ===');
-      buffer.writeln('Total Sessions: ${speedSessions.length}');
-      buffer.writeln('');
+      // Output each session
+      for (int i = 0; i < allTechnicalSessions.length; i++) {
+        final session = allTechnicalSessions[i];
+        final isSpeedSession = session['_isSpeedSession'] as bool? ?? false;
+        
+        if (isSpeedSession) {
+          // Speed session format
+          final date = session['date'] as String? ?? '';
+          final targetTime = session['targetTime'] as double? ?? 0.0;
+          final targetTimeUnit = session['targetTimeUnit'] as String? ?? 'seconds';
+          final distance = session['distance'] as double? ?? 0.0;
+          final distanceUnit = session['distanceUnit'] as String? ?? 'meters';
+          final bestTime = session['bestTime'] as int? ?? 0;
+          final averageTime = session['averageTime'] as double? ?? 0.0;
+          final successRate = session['successRate'] as double? ?? 0.0;
+          final attempts = session['attempts'] as List? ?? [];
 
-      for (int i = 0; i < speedSessions.length; i++) {
-        final session = speedSessions[i];
-        final date = session['date'] as String? ?? '';
-        final targetTime = session['targetTime'] as double? ?? 0.0;
-        final targetTimeUnit = session['targetTimeUnit'] as String? ?? 'seconds';
-        final distance = session['distance'] as double? ?? 0.0;
-        final distanceUnit = session['distanceUnit'] as String? ?? 'meters';
-        final bestTime = session['bestTime'] as int? ?? 0;
-        final averageTime = session['averageTime'] as double? ?? 0.0;
-        final successRate = session['successRate'] as double? ?? 0.0;
-        final attempts = session['attempts'] as List? ?? [];
-
-        buffer.writeln('--- Session ${i + 1}: Speed Training ---');
-        if (date.isNotEmpty) {
-          try {
-            final dateTime = DateTime.parse(date);
-            buffer.writeln(
-                'Date: ${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}');
-          } catch (e) {
-            buffer.writeln('Date: $date');
+          buffer.writeln('--- Session ${i + 1}: Speed ---');
+          if (date.isNotEmpty) {
+            try {
+              final dateTime = DateTime.parse(date);
+              buffer.writeln(
+                  'Date: ${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}');
+            } catch (e) {
+              buffer.writeln('Date: $date');
+            }
           }
+          buffer.writeln('Skill: Speed');
+          buffer.writeln('');
+
+          buffer.writeln('Configuration:');
+          buffer.writeln('  Target Time: $targetTime $targetTimeUnit');
+          buffer.writeln('  Distance: $distance $distanceUnit');
+          buffer.writeln('');
+
+          buffer.writeln('Performance:');
+          buffer.writeln('  Total Attempts: ${attempts.length}');
+          buffer.writeln('  Best Time: ${_formatTimeFromMillis(bestTime)}');
+          buffer.writeln('  Average Time: ${_formatTimeFromMillis(averageTime.round())}');
+          buffer.writeln('  Success Rate: ${successRate.toStringAsFixed(1)}%');
+          buffer.writeln('');
+
+          buffer.writeln('Attempts:');
+          for (final attempt in attempts) {
+            final attemptNumber = attempt['attemptNumber'] as int? ?? 0;
+            final timeInMs = attempt['timeInMilliseconds'] as int? ?? 0;
+            final metTarget = attempt['metTarget'] as bool? ?? false;
+            final icon = metTarget ? '✓' : '✗';
+            buffer.writeln('  $icon Attempt #$attemptNumber: ${_formatTimeFromMillis(timeInMs)}');
+          }
+          buffer.writeln('');
+        } else {
+          // Regular technical session format
+          final sessionName = session['name'] as String? ?? 'Session ${i + 1}';
+          final timestamp = session['timestamp'] as String? ?? '';
+          final skillLabel = session['skillLabel'] as String? ?? 'Unknown Skill';
+          final successful = session['successful'] as int? ?? 0;
+          final neutral = session['neutral'] as int? ?? 0;
+          final fail = session['fail'] as int? ?? 0;
+          final currentScore = session['currentScore'] as double? ?? 0.0;
+          final targetScore = session['targetScore'] as double?;
+          final totalReps = session['totalReps'] as int?;
+
+          buffer.writeln('--- Session ${i + 1}: $sessionName ---');
+          if (timestamp.isNotEmpty) {
+            try {
+              final dateTime = DateTime.parse(timestamp);
+              buffer.writeln(
+                  'Date: ${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}');
+            } catch (e) {
+              buffer.writeln('Date: $timestamp');
+            }
+          }
+          buffer.writeln('Skill: $skillLabel');
+          buffer.writeln('');
+
+          buffer.writeln('Performance:');
+          buffer.writeln('  ✓ Successful: $successful');
+          buffer.writeln('  ⊙ Neutral: $neutral');
+          buffer.writeln('  ✗ Failed: $fail');
+          buffer.writeln('  Total Attempts: ${successful + neutral + fail}');
+          buffer.writeln('');
+
+          buffer.writeln('Score: ${currentScore.toStringAsFixed(1)}/10');
+          if (targetScore != null) {
+            buffer.writeln('Target Score: ${targetScore.toStringAsFixed(1)}/10');
+          }
+          if (totalReps != null) {
+            buffer.writeln('Target Reps: $totalReps');
+          }
+          buffer.writeln('');
         }
-        buffer.writeln('');
-
-        buffer.writeln('Configuration:');
-        buffer.writeln('  Target Time: $targetTime $targetTimeUnit');
-        buffer.writeln('  Distance: $distance $distanceUnit');
-        buffer.writeln('');
-
-        buffer.writeln('Statistics:');
-        buffer.writeln('  Total Attempts: ${attempts.length}');
-        buffer.writeln('  Best Time: ${_formatTimeFromMillis(bestTime)}');
-        buffer.writeln('  Average Time: ${_formatTimeFromMillis(averageTime.round())}');
-        buffer.writeln('  Success Rate: ${successRate.toStringAsFixed(1)}%');
-        buffer.writeln('');
-
-        buffer.writeln('Attempts:');
-        for (final attempt in attempts) {
-          final attemptNumber = attempt['attemptNumber'] as int? ?? 0;
-          final timeInMs = attempt['timeInMilliseconds'] as int? ?? 0;
-          final metTarget = attempt['metTarget'] as bool? ?? false;
-          final icon = metTarget ? '✓' : '✗';
-          buffer.writeln('  $icon Attempt #$attemptNumber: ${_formatTimeFromMillis(timeInMs)}');
-        }
-        buffer.writeln('');
       }
     }
 
@@ -228,14 +252,8 @@ class TrainingExportHelper {
           'Total Strength & Condition Sessions: ${strengthSessions.length}');
     }
     if (includeTechnical) {
-      if (technicalSessions != null) {
-        buffer.writeln(
-            'Total Technical Performance Sessions: ${technicalSessions.length}');
-      }
-      if (speedSessions != null) {
-        buffer.writeln(
-            'Total Speed Training Sessions: ${speedSessions.length}');
-      }
+      final totalTechnical = (technicalSessions?.length ?? 0) + (speedSessions?.length ?? 0);
+      buffer.writeln('Total Technical Performance Sessions: $totalTechnical');
     }
 
     return buffer.toString();
@@ -286,18 +304,11 @@ class TrainingExportHelper {
       ]);
     }
     if (includeTechnical) {
-      if (technicalSessions != null) {
-        summarySheet.appendRow([
-          TextCellValue('Total Technical Performance Sessions:'),
-          IntCellValue(technicalSessions.length),
-        ]);
-      }
-      if (speedSessions != null) {
-        summarySheet.appendRow([
-          TextCellValue('Total Speed Training Sessions:'),
-          IntCellValue(speedSessions.length),
-        ]);
-      }
+      final totalTechnical = (technicalSessions?.length ?? 0) + (speedSessions?.length ?? 0);
+      summarySheet.appendRow([
+        TextCellValue('Total Technical Performance Sessions:'),
+        IntCellValue(totalTechnical),
+      ]);
     }
 
     // Strength & Condition Sheet
@@ -400,8 +411,8 @@ class TrainingExportHelper {
 
     // Technical Performance Sheet
     if (includeTechnical &&
-        technicalSessions != null &&
-        technicalSessions.isNotEmpty) {
+        (technicalSessions != null && technicalSessions.isNotEmpty ||
+         speedSessions != null && speedSessions.isNotEmpty)) {
       final technicalSheet = excel['Technical Performance'];
       technicalSheet.appendRow([
         TextCellValue('Session'),
@@ -411,142 +422,114 @@ class TrainingExportHelper {
         TextCellValue('Neutral'),
         TextCellValue('Failed'),
         TextCellValue('Total Attempts'),
-        TextCellValue('Score'),
+        TextCellValue('Score/Best Time'),
         TextCellValue('Target Score'),
         TextCellValue('Target Reps'),
+        TextCellValue('Additional Info'),
       ]);
 
-      for (int i = 0; i < technicalSessions.length; i++) {
-        final session = technicalSessions[i];
-        final sessionName = session['name'] as String? ?? 'Session ${i + 1}';
-        final timestamp = session['timestamp'] as String? ?? '';
-        String dateStr = '';
-        if (timestamp.isNotEmpty) {
-          try {
-            final dateTime = DateTime.parse(timestamp);
-            dateStr =
-                '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-          } catch (e) {
-            dateStr = timestamp;
-          }
+      // Combine and sort all sessions by date
+      final allTechnicalSessions = <Map<String, dynamic>>[];
+      
+      // Add regular technical sessions with type marker
+      if (technicalSessions != null) {
+        for (var session in technicalSessions) {
+          allTechnicalSessions.add({...session, '_isSpeedSession': false});
         }
-
-        final skillLabel = session['skillLabel'] as String? ?? 'Unknown Skill';
-        final successful = session['successful'] as int? ?? 0;
-        final neutral = session['neutral'] as int? ?? 0;
-        final fail = session['fail'] as int? ?? 0;
-        final currentScore = session['currentScore'] as double? ?? 0.0;
-        final targetScore = session['targetScore'] as double?;
-        final totalReps = session['totalReps'] as int?;
-
-        technicalSheet.appendRow([
-          TextCellValue(sessionName),
-          TextCellValue(dateStr),
-          TextCellValue(skillLabel),
-          IntCellValue(successful),
-          IntCellValue(neutral),
-          IntCellValue(fail),
-          IntCellValue(successful + neutral + fail),
-          DoubleCellValue(currentScore),
-          targetScore != null
-              ? DoubleCellValue(targetScore)
-              : TextCellValue('-'),
-          totalReps != null ? IntCellValue(totalReps) : TextCellValue('-'),
-        ]);
       }
-    }
-
-    // Speed Training Sheet
-    if (includeTechnical &&
-        speedSessions != null &&
-        speedSessions.isNotEmpty) {
-      final speedSheet = excel['Speed Training'];
-      speedSheet.appendRow([
-        TextCellValue('Session'),
-        TextCellValue('Date'),
-        TextCellValue('Target Time'),
-        TextCellValue('Time Unit'),
-        TextCellValue('Distance'),
-        TextCellValue('Distance Unit'),
-        TextCellValue('Total Attempts'),
-        TextCellValue('Best Time'),
-        TextCellValue('Average Time'),
-        TextCellValue('Success Rate (%)'),
-      ]);
-
-      for (int i = 0; i < speedSessions.length; i++) {
-        final session = speedSessions[i];
-        final date = session['date'] as String? ?? '';
-        String dateStr = '';
-        if (date.isNotEmpty) {
-          try {
-            final dateTime = DateTime.parse(date);
-            dateStr =
-                '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
-          } catch (e) {
-            dateStr = date;
-          }
+      
+      // Add speed sessions with type marker
+      if (speedSessions != null) {
+        for (var session in speedSessions) {
+          allTechnicalSessions.add({...session, '_isSpeedSession': true});
         }
-
-        final targetTime = session['targetTime'] as double? ?? 0.0;
-        final targetTimeUnit = session['targetTimeUnit'] as String? ?? 'seconds';
-        final distance = session['distance'] as double? ?? 0.0;
-        final distanceUnit = session['distanceUnit'] as String? ?? 'meters';
-        final bestTime = session['bestTime'] as int? ?? 0;
-        final averageTime = session['averageTime'] as double? ?? 0.0;
-        final successRate = session['successRate'] as double? ?? 0.0;
-        final attempts = session['attempts'] as List? ?? [];
-
-        speedSheet.appendRow([
-          TextCellValue('Speed Training ${i + 1}'),
-          TextCellValue(dateStr),
-          DoubleCellValue(targetTime),
-          TextCellValue(targetTimeUnit),
-          DoubleCellValue(distance),
-          TextCellValue(distanceUnit),
-          IntCellValue(attempts.length),
-          TextCellValue(_formatTimeFromMillis(bestTime)),
-          TextCellValue(_formatTimeFromMillis(averageTime.round())),
-          DoubleCellValue(successRate),
-        ]);
       }
+      
+      // Sort by date (newest first)
+      allTechnicalSessions.sort((a, b) {
+        final aDate = DateTime.tryParse(a['date'] as String? ?? a['timestamp'] as String? ?? '');
+        final bDate = DateTime.tryParse(b['date'] as String? ?? b['timestamp'] as String? ?? '');
+        if (aDate == null || bDate == null) return 0;
+        return bDate.compareTo(aDate);
+      });
 
-      // Add detailed attempts sheet
-      final attemptsSheet = excel['Speed Training - Attempts'];
-      attemptsSheet.appendRow([
-        TextCellValue('Session'),
-        TextCellValue('Date'),
-        TextCellValue('Attempt #'),
-        TextCellValue('Time'),
-        TextCellValue('Met Target'),
-      ]);
-
-      for (int i = 0; i < speedSessions.length; i++) {
-        final session = speedSessions[i];
-        final date = session['date'] as String? ?? '';
-        String dateStr = '';
-        if (date.isNotEmpty) {
-          try {
-            final dateTime = DateTime.parse(date);
-            dateStr =
-                '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-          } catch (e) {
-            dateStr = date;
+      for (int i = 0; i < allTechnicalSessions.length; i++) {
+        final session = allTechnicalSessions[i];
+        final isSpeedSession = session['_isSpeedSession'] as bool? ?? false;
+        
+        if (isSpeedSession) {
+          // Speed session
+          final date = session['date'] as String? ?? '';
+          String dateStr = '';
+          if (date.isNotEmpty) {
+            try {
+              final dateTime = DateTime.parse(date);
+              dateStr =
+                  '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+            } catch (e) {
+              dateStr = date;
+            }
           }
-        }
 
-        final attempts = session['attempts'] as List? ?? [];
-        for (final attempt in attempts) {
-          final attemptNumber = attempt['attemptNumber'] as int? ?? 0;
-          final timeInMs = attempt['timeInMilliseconds'] as int? ?? 0;
-          final metTarget = attempt['metTarget'] as bool? ?? false;
+          final targetTime = session['targetTime'] as double? ?? 0.0;
+          final targetTimeUnit = session['targetTimeUnit'] as String? ?? 'seconds';
+          final distance = session['distance'] as double? ?? 0.0;
+          final distanceUnit = session['distanceUnit'] as String? ?? 'meters';
+          final bestTime = session['bestTime'] as int? ?? 0;
+          final averageTime = session['averageTime'] as double? ?? 0.0;
+          final successRate = session['successRate'] as double? ?? 0.0;
+          final attempts = session['attempts'] as List? ?? [];
 
-          attemptsSheet.appendRow([
-            TextCellValue('Speed Training ${i + 1}'),
+          technicalSheet.appendRow([
+            TextCellValue('Speed ${i + 1}'),
             TextCellValue(dateStr),
-            IntCellValue(attemptNumber),
-            TextCellValue(_formatTimeFromMillis(timeInMs)),
-            TextCellValue(metTarget ? 'Yes' : 'No'),
+            TextCellValue('Speed'),
+            IntCellValue(attempts.where((a) => a['metTarget'] == true).length),
+            const IntCellValue(0), // No neutral for speed
+            IntCellValue(attempts.where((a) => a['metTarget'] == false).length),
+            IntCellValue(attempts.length),
+            TextCellValue(_formatTimeFromMillis(bestTime)),
+            TextCellValue('Target: $targetTime $targetTimeUnit'),
+            TextCellValue('Distance: $distance $distanceUnit'),
+            TextCellValue('Avg: ${_formatTimeFromMillis(averageTime.round())} | Success Rate: ${successRate.toStringAsFixed(1)}%'),
+          ]);
+        } else {
+          // Regular technical session
+          final sessionName = session['name'] as String? ?? 'Session ${i + 1}';
+          final timestamp = session['timestamp'] as String? ?? '';
+          String dateStr = '';
+          if (timestamp.isNotEmpty) {
+            try {
+              final dateTime = DateTime.parse(timestamp);
+              dateStr =
+                  '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+            } catch (e) {
+              dateStr = timestamp;
+            }
+          }
+
+          final skillLabel = session['skillLabel'] as String? ?? 'Unknown Skill';
+          final successful = session['successful'] as int? ?? 0;
+          final neutral = session['neutral'] as int? ?? 0;
+          final fail = session['fail'] as int? ?? 0;
+          final currentScore = session['currentScore'] as double? ?? 0.0;
+          final targetScore = session['targetScore'] as double?;
+          final totalReps = session['totalReps'] as int?;
+
+          technicalSheet.appendRow([
+            TextCellValue(sessionName),
+            TextCellValue(dateStr),
+            TextCellValue(skillLabel),
+            IntCellValue(successful),
+            IntCellValue(neutral),
+            IntCellValue(fail),
+            IntCellValue(successful + neutral + fail),
+            DoubleCellValue(currentScore),
+            targetScore != null
+                ? DoubleCellValue(targetScore)
+                : TextCellValue('-'),
+            totalReps != null ? IntCellValue(totalReps) : TextCellValue('-'),
+            TextCellValue(''),
           ]);
         }
       }
