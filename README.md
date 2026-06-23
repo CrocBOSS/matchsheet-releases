@@ -8,7 +8,7 @@ Download the latest version of Match Sheet App for Android.
 
 ### [📱 Download Latest Release](https://github.com/CrocBOSS/matchsheet-releases/releases/latest)
 
-**Current Version:** 1.0.0
+**Current Version:** 1.0.5
 
 ---
 
